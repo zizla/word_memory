@@ -1056,6 +1056,42 @@
       flex-shrink: 0;
     }
 
+    .fetch-count-row {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+    }
+
+    .fetch-count-label {
+      font-size: 11.5px;
+      color: var(--text-sub);
+      font-weight: 600;
+      margin-right: 1px;
+    }
+
+    .count-chip {
+      min-width: 48px;
+      height: 38px;
+      padding: 0 9px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-sub);
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .count-chip.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 700;
+    }
+
     .btn-fetch-main {
       width: 100%;
       height: 40px;
@@ -1717,13 +1753,27 @@
     /* ==========================================================================
        4. Web Speech API (TTS) 발음 읽기
        ========================================================================== */
+    function toSpeechLang(lang) {
+      if (!lang) return 'en-US';
+      if (lang === 'zh' || lang === 'zh-CN' || lang === 'zh-TW') return 'zh-CN';
+      if (lang === 'fr' || lang === 'fr-FR') return 'fr-FR';
+      if (lang === 'ja') return 'ja-JP';
+      return lang;
+    }
+
     function detectLanguage(text, fallbackLang = 'en-US') {
       if (!text) return fallbackLang;
+      const base = toSpeechLang(fallbackLang);
       if (/[\u3040-\u30ff\u31f0-\u31ff]/.test(text)) return 'ja-JP';
       if (/[\uac00-\ud7af]/.test(text)) return 'ko-KR';
-      if (/[\u4e00-\u9faf]/.test(text) && fallbackLang === 'ja-JP') return 'ja-JP';
-      if (/[a-zA-Z]/.test(text)) return 'en-US';
-      return fallbackLang;
+      if (/[\u4e00-\u9faf]/.test(text)) {
+        if (base === 'ja-JP') return 'ja-JP';
+        return 'zh-CN';
+      }
+      if (/[a-zA-Z\u00c0-\u00ff]/.test(text)) {
+        return base === 'fr-FR' ? 'fr-FR' : 'en-US';
+      }
+      return base;
     }
 
     function speakText(text, deckLang) {
@@ -1731,7 +1781,7 @@
       try {
         window.speechSynthesis.cancel();
         const utter = new SpeechSynthesisUtterance(text);
-        utter.lang = detectLanguage(text, deckLang || 'en-US');
+        utter.lang = detectLanguage(text, toSpeechLang(deckLang || 'en-US'));
         utter.rate = 0.96;
         window.speechSynthesis.speak(utter);
       } catch (e) {
@@ -1847,7 +1897,7 @@
       const deck = getActiveDeck();
       const total = sessionState.filteredCards.length;
 
-      const langNames = { 'en-US': '영어 학습', 'ja-JP': '일본어 학습', 'ko-KR': '한국어/기타' };
+      const langNames = { 'en-US': '영어 학습', 'ja-JP': '일본어 학습', 'zh': '중국어 학습', 'zh-CN': '중국어 학습', 'fr': '프랑스어 학습', 'fr-FR': '프랑스어 학습', 'ko-KR': '한국어/기타' };
       dom.deckLangBadge.textContent = `${langNames[deck.lang] || '단어 학습'} · ${deck.cards.length}단어`;
 
       if (total === 0) {
@@ -2206,7 +2256,7 @@
     }
   ]
 }
-※ lang 값은 영어면 "en-US", 일본어면 "ja-JP", 한국어면 "ko-KR"로 지정해 주세요.`;
+※ lang 값은 영어면 "en-US", 일본어면 "ja-JP", 중국어면 "zh", 프랑스어면 "fr", 한국어면 "ko-KR"로 지정해 주세요.`;
 
     // 따옴표("...") 내부의 쉼표/줄바꿈을 안전하게 처리하는 RFC-4180 호환 CSV/TSV 파서
     function parseDelimitedText(text, delimiter) {
@@ -2814,7 +2864,143 @@
       { cat: '비즈니스', word: '円滑', reading: 'えんかつ', pos: '형용동사', meaning: '원활함', exSrc: '円滑なコミュニケーションが成功の鍵を握る。', exKo: '원활한 커뮤니케이션이 성공의 열쇠를 쥔다.' }
     ];
 
+    // 중국어(zh) 확장 뱅크 (HSK·회화 62개) — 간체자 + 병음 + 품사 + 한국어 뜻 + 예문
+    const ZH_EXTENDED_BANK = [
+      { cat: 'HSK·회화', word: '你好', reading: 'nǐ hǎo', pos: '감탄사', meaning: '안녕하세요', exSrc: '你好，很高兴认识你。', exKo: '안녕하세요, 만나서 반갑습니다.' },
+      { cat: 'HSK·회화', word: '谢谢', reading: 'xièxie', pos: '감탄사', meaning: '고맙습니다', exSrc: '谢谢你的帮助。', exKo: '도와주셔서 감사합니다.' },
+      { cat: 'HSK·회화', word: '再见', reading: 'zàijiàn', pos: '감탄사', meaning: '안녕히 가세요, 또 만나요', exSrc: '明天见，再见！', exKo: '내일 봐요, 안녕히!' },
+      { cat: 'HSK·회화', word: '请', reading: 'qǐng', pos: '동사', meaning: '청하다, 부디 ~해 주세요', exSrc: '请给我一杯水。', exKo: '물 한 잔 주세요.' },
+      { cat: 'HSK·회화', word: '对不起', reading: 'duìbuqǐ', pos: '감탄사', meaning: '죄송합니다', exSrc: '对不起，我迟到了。', exKo: '죄송합니다, 제가 늦었습니다.' },
+      { cat: 'HSK·회화', word: '没关系', reading: 'méi guānxi', pos: '감탄사', meaning: '괜찮습니다', exSrc: '没关系，我们下次再约。', exKo: '괜찮아요, 다음에 다시 약속해요.' },
+      { cat: 'HSK·회화', word: '名字', reading: 'míngzi', pos: '명사', meaning: '이름', exSrc: '你叫什么名字？', exKo: '이름이 무엇입니까?' },
+      { cat: 'HSK·회화', word: '朋友', reading: 'péngyou', pos: '명사', meaning: '친구', exSrc: '他是我大学时候的朋友。', exKo: '그는 제 대학 시절 친구입니다.' },
+      { cat: 'HSK·회화', word: '老师', reading: 'lǎoshī', pos: '명사', meaning: '선생님', exSrc: '王老师教我们汉语。', exKo: '왕 선생님이 우리에게 중국어를 가르칩니다.' },
+      { cat: 'HSK·회화', word: '学生', reading: 'xuésheng', pos: '명사', meaning: '학생', exSrc: '这里的学生都很努力。', exKo: '이곳 학생들은 모두 열심히 합니다.' },
+      { cat: 'HSK·회화', word: '学习', reading: 'xuéxí', pos: '동사', meaning: '공부하다, 배우다', exSrc: '我每天学习一个小时汉语。', exKo: '저는 매일 한 시간씩 중국어를 공부합니다.' },
+      { cat: 'HSK·회화', word: '工作', reading: 'gōngzuò', pos: '명사/동사', meaning: '일, 직업 / 일하다', exSrc: '你的工作顺利吗？', exKo: '일은 잘 되고 있나요?' },
+      { cat: 'HSK·회화', word: '时间', reading: 'shíjiān', pos: '명사', meaning: '시간', exSrc: '你今天有时间吗？', exKo: '오늘 시간 있어요?' },
+      { cat: 'HSK·회화', word: '现在', reading: 'xiànzài', pos: '명사', meaning: '지금, 현재', exSrc: '现在几点？', exKo: '지금 몇 시입니까?' },
+      { cat: 'HSK·회화', word: '今天', reading: 'jīntiān', pos: '명사', meaning: '오늘', exSrc: '今天天气很好。', exKo: '오늘 날씨가 좋습니다.' },
+      { cat: 'HSK·회화', word: '明天', reading: 'míngtiān', pos: '명사', meaning: '내일', exSrc: '明天早上八点出发。', exKo: '내일 아침 8시에 출발합니다.' },
+      { cat: 'HSK·회화', word: '昨天', reading: 'zuótiān', pos: '명사', meaning: '어제', exSrc: '昨天我去了医院。', exKo: '어제 병원에 다녀왔습니다.' },
+      { cat: 'HSK·회화', word: '早上', reading: 'zǎoshang', pos: '명사', meaning: '아침', exSrc: '我每天早上跑步。', exKo: '저는 매일 아침 달리기를 합니다.' },
+      { cat: 'HSK·회화', word: '晚上', reading: 'wǎnshang', pos: '명사', meaning: '저녁, 밤', exSrc: '晚上我们一起吃饭吧。', exKo: '저녁에 우리 같이 식사합시다.' },
+      { cat: 'HSK·회화', word: '吃饭', reading: 'chīfàn', pos: '동사', meaning: '밥을 먹다', exSrc: '你吃饭了吗？', exKo: '밥 먹었어요?' },
+      { cat: 'HSK·회화', word: '喝水', reading: 'hē shuǐ', pos: '동사구', meaning: '물을 마시다', exSrc: '多喝水对身体好。', exKo: '물을 많이 마시는 것이 건강에 좋습니다.' },
+      { cat: 'HSK·회화', word: '咖啡', reading: 'kāfēi', pos: '명사', meaning: '커피', exSrc: '我要一杯热咖啡。', exKo: '따뜻한 커피 한 잔 주세요.' },
+      { cat: 'HSK·회화', word: '米饭', reading: 'mǐfàn', pos: '명사', meaning: '쌀밥', exSrc: '请给我一碗米饭。', exKo: '밥 한 그릇 주세요.' },
+      { cat: 'HSK·회화', word: '面条', reading: 'miàntiáo', pos: '명사', meaning: '국수', exSrc: '这家店的面条很有名。', exKo: '이 가게의 국수가 아주 유명합니다.' },
+      { cat: 'HSK·회화', word: '苹果', reading: 'píngguǒ', pos: '명사', meaning: '사과', exSrc: '苹果一斤多少钱？', exKo: '사과 한 근에 얼마입니까?' },
+      { cat: 'HSK·회화', word: '商店', reading: 'shāngdiàn', pos: '명사', meaning: '가게, 상점', exSrc: '商店九点开门。', exKo: '가게는 9시에 문을 엽니다.' },
+      { cat: 'HSK·회화', word: '医院', reading: 'yīyuàn', pos: '명사', meaning: '병원', exSrc: '医院离这里很近。', exKo: '병원은 여기서 가깝습니다.' },
+      { cat: 'HSK·회화', word: '学校', reading: 'xuéxiào', pos: '명사', meaning: '학교', exSrc: '学校前面有一个公园。', exKo: '학교 앞에 공원이 하나 있습니다.' },
+      { cat: 'HSK·회화', word: '公司', reading: 'gōngsī', pos: '명사', meaning: '회사', exSrc: '他在一家食品公司工作。', exKo: '그는 식품 회사에서 일합니다.' },
+      { cat: 'HSK·회화', word: '银行', reading: 'yínháng', pos: '명사', meaning: '은행', exSrc: '银行下午五点关门。', exKo: '은행은 오후 5시에 문을 닫습니다.' },
+      { cat: 'HSK·회화', word: '地铁', reading: 'dìtiě', pos: '명사', meaning: '지하철', exSrc: '坐地铁去机场很方便。', exKo: '지하철로 공항에 가는 것이 편리합니다.' },
+      { cat: 'HSK·회화', word: '飞机', reading: 'fēijī', pos: '명사', meaning: '비행기', exSrc: '飞机十点起飞。', exKo: '비행기는 10시에 이륙합니다.' },
+      { cat: 'HSK·회화', word: '火车', reading: 'huǒchē', pos: '명사', meaning: '기차', exSrc: '我们坐火车去上海。', exKo: '우리는 기차를 타고 상하이에 갑니다.' },
+      { cat: 'HSK·회화', word: '多少钱', reading: 'duōshao qián', pos: '표현', meaning: '얼마입니까', exSrc: '这个多少钱？', exKo: '이것은 얼마입니까?' },
+      { cat: 'HSK·회화', word: '便宜', reading: 'piányi', pos: '형용사', meaning: '싸다, 저렴하다', exSrc: '这里的蔬菜很便宜。', exKo: '이곳의 채소는 아주 저렴합니다.' },
+      { cat: 'HSK·회화', word: '贵', reading: 'guì', pos: '형용사', meaning: '비싸다', exSrc: '这个价格有点贵。', exKo: '이 가격은 조금 비쌉니다.' },
+      { cat: 'HSK·회화', word: '买', reading: 'mǎi', pos: '동사', meaning: '사다', exSrc: '我想买两瓶牛奶。', exKo: '우유 두 병을 사고 싶습니다.' },
+      { cat: 'HSK·회화', word: '卖', reading: 'mài', pos: '동사', meaning: '팔다', exSrc: '这家店卖新鲜的蔬菜。', exKo: '이 가게는 신선한 채소를 팝니다.' },
+      { cat: 'HSK·회화', word: '帮助', reading: 'bāngzhù', pos: '동사/명사', meaning: '돕다, 도움', exSrc: '非常感谢你的帮助。', exKo: '당신의 도움에 정말 감사합니다.' },
+      { cat: 'HSK·회화', word: '会议', reading: 'huìyì', pos: '명사', meaning: '회의', exSrc: '会议三点开始。', exKo: '회의는 3시에 시작합니다.' },
+      { cat: 'HSK·회화', word: '合同', reading: 'hétong', pos: '명사', meaning: '계약(서)', exSrc: '我们明天签合同。', exKo: '우리는 내일 계약서에 서명합니다.' },
+      { cat: 'HSK·회화', word: '产品', reading: 'chǎnpǐn', pos: '명사', meaning: '제품', exSrc: '这个产品的质量很好。', exKo: '이 제품의 품질이 아주 좋습니다.' },
+      { cat: 'HSK·회화', word: '市场', reading: 'shìchǎng', pos: '명사', meaning: '시장', exSrc: '中国市场非常大。', exKo: '중국 시장은 매우 큽니다.' },
+      { cat: 'HSK·회화', word: '顾客', reading: 'gùkè', pos: '명사', meaning: '고객', exSrc: '顾客的意见很重要。', exKo: '고객의 의견은 중요합니다.' },
+      { cat: 'HSK·회화', word: '质量', reading: 'zhìliàng', pos: '명사', meaning: '품질', exSrc: '我们要保证产品质量。', exKo: '우리는 제품 품질을 보장해야 합니다.' },
+      { cat: 'HSK·회화', word: '管理', reading: 'guǎnlǐ', pos: '동사/명사', meaning: '관리하다, 관리', exSrc: '他在管理生产部门。', exKo: '그는 생산 부서를 관리하고 있습니다.' },
+      { cat: 'HSK·회화', word: '生产', reading: 'shēngchǎn', pos: '동사', meaning: '생산하다', exSrc: '工厂每天生产一万个产品。', exKo: '공장은 매일 제품 1만 개를 생산합니다.' },
+      { cat: 'HSK·회화', word: '研究', reading: 'yánjiū', pos: '동사/명사', meaning: '연구하다, 연구', exSrc: '我们正在研究新的配方。', exKo: '우리는 새로운 배합을 연구하고 있습니다.' },
+      { cat: 'HSK·회화', word: '技术', reading: 'jìshù', pos: '명사', meaning: '기술', exSrc: '这项技术很难掌握。', exKo: '이 기술은 습득하기 어렵습니다.' },
+      { cat: 'HSK·회화', word: '发展', reading: 'fāzhǎn', pos: '동사/명사', meaning: '발전하다, 발전', exSrc: '公司这几年发展得很快。', exKo: '회사가 이 몇 년 동안 빠르게 발전했습니다.' },
+      { cat: 'HSK·회화', word: '重要', reading: 'zhòngyào', pos: '형용사', meaning: '중요하다', exSrc: '食品安全非常重要。', exKo: '식품 안전은 매우 중요합니다.' },
+      { cat: 'HSK·회화', word: '简单', reading: 'jiǎndān', pos: '형용사', meaning: '간단하다, 단순하다', exSrc: '这个问题很简单。', exKo: '이 문제는 아주 간단합니다.' },
+      { cat: 'HSK·회화', word: '复杂', reading: 'fùzá', pos: '형용사', meaning: '복잡하다', exSrc: '情况比我们想的复杂。', exKo: '상황이 우리가 생각한 것보다 복잡합니다.' },
+      { cat: 'HSK·회화', word: '喜欢', reading: 'xǐhuan', pos: '동사', meaning: '좋아하다', exSrc: '我很喜欢中国菜。', exKo: '저는 중국 요리를 아주 좋아합니다.' },
+      { cat: 'HSK·회화', word: '需要', reading: 'xūyào', pos: '동사', meaning: '필요하다, 필요로 하다', exSrc: '我们需要更多的时间。', exKo: '우리는 더 많은 시간이 필요합니다.' },
+      { cat: 'HSK·회화', word: '可以', reading: 'kěyǐ', pos: '조동사', meaning: '~할 수 있다, 가능하다', exSrc: '我可以帮你拿行李。', exKo: '제가 짐을 들어 드릴 수 있습니다.' },
+      { cat: 'HSK·회화', word: '准备', reading: 'zhǔnbèi', pos: '동사', meaning: '준비하다', exSrc: '会议的资料准备好了吗？', exKo: '회의 자료는 준비되었습니까?' },
+      { cat: 'HSK·회화', word: '出发', reading: 'chūfā', pos: '동사', meaning: '출발하다', exSrc: '我们八点从酒店出发。', exKo: '우리는 8시에 호텔에서 출발합니다.' },
+      { cat: 'HSK·회화', word: '到达', reading: 'dàodá', pos: '동사', meaning: '도착하다', exSrc: '飞机已经到达北京。', exKo: '비행기가 이미 베이징에 도착했습니다.' },
+      { cat: 'HSK·회화', word: '旅行', reading: 'lǚxíng', pos: '동사/명사', meaning: '여행하다, 여행', exSrc: '我下个月去中国旅行。', exKo: '저는 다음 달에 중국을 여행합니다.' },
+      { cat: 'HSK·회화', word: '天气', reading: 'tiānqì', pos: '명사', meaning: '날씨', exSrc: '明天天气怎么样？', exKo: '내일 날씨는 어떻습니까?' },
+      { cat: 'HSK·회화', word: '健康', reading: 'jiànkāng', pos: '명사/형용사', meaning: '건강, 건강하다', exSrc: '多吃水果对健康有好处。', exKo: '과일을 많이 먹는 것은 건강에 좋습니다.' },
+      { cat: 'HSK·회화', word: '经验', reading: 'jīngyàn', pos: '명사', meaning: '경험', exSrc: '他在食品行业有很多经验。', exKo: '그는 식품 업계에서 경험이 많습니다.' }
+    ];
+
     // 영단어 전체 오프라인 폴백 뱅크 (주제별 12~15개)
+    // 프랑스어(fr) 확장 뱅크 (필수·회화 63개) — 표제어 + IPA 발음 + 성·품사 + 한국어 뜻 + 예문
+    const FR_EXTENDED_BANK = [
+      { cat: '필수·회화', word: 'bonjour', reading: '/bɔ̃ʒuʁ/', pos: '감탄사', meaning: '안녕하세요', exSrc: 'Bonjour, comment allez-vous ?', exKo: '안녕하세요, 어떻게 지내세요?' },
+      { cat: '필수·회화', word: 'bonsoir', reading: '/bɔ̃swaʁ/', pos: '감탄사', meaning: '안녕하세요 (저녁 인사)', exSrc: 'Bonsoir, entrez s’il vous plaît.', exKo: '안녕하세요, 들어오세요.' },
+      { cat: '필수·회화', word: 'salut', reading: '/saly/', pos: '감탄사', meaning: '안녕 (반말)', exSrc: 'Salut, ça va ?', exKo: '안녕, 잘 지내?' },
+      { cat: '필수·회화', word: 'au revoir', reading: '/o ʁəvwaʁ/', pos: '감탄사', meaning: '안녕히 가세요', exSrc: 'Au revoir et bonne journée !', exKo: '안녕히 가세요, 좋은 하루 보내세요!' },
+      { cat: '필수·회화', word: 'merci', reading: '/mɛʁsi/', pos: '감탄사', meaning: '고맙습니다', exSrc: 'Merci beaucoup pour votre aide.', exKo: '도와주셔서 정말 감사합니다.' },
+      { cat: '필수·회화', word: 's’il vous plaît', reading: '/sil vu plɛ/', pos: '표현', meaning: '부탁합니다, ~해 주세요', exSrc: 'Un café, s’il vous plaît.', exKo: '커피 한 잔 주세요.' },
+      { cat: '필수·회화', word: 'pardon', reading: '/paʁdɔ̃/', pos: '감탄사', meaning: '실례합니다, 죄송합니다', exSrc: 'Pardon, où est la gare ?', exKo: '실례합니다, 기차역은 어디입니까?' },
+      { cat: '필수·회화', word: 'excusez-moi', reading: '/ɛkskyze mwa/', pos: '표현', meaning: '실례합니다', exSrc: 'Excusez-moi, je cherche la sortie.', exKo: '실례합니다, 출구를 찾고 있습니다.' },
+      { cat: '필수·회화', word: 'oui', reading: '/wi/', pos: '부사', meaning: '네', exSrc: 'Oui, je suis d’accord.', exKo: '네, 저는 동의합니다.' },
+      { cat: '필수·회화', word: 'non', reading: '/nɔ̃/', pos: '부사', meaning: '아니요', exSrc: 'Non, ce n’est pas possible.', exKo: '아니요, 그것은 불가능합니다.' },
+      { cat: '필수·회화', word: 'monsieur', reading: '/məsjø/', pos: 'n.m.', meaning: '~씨, 신사분', exSrc: 'Bonjour monsieur, puis-je vous aider ?', exKo: '안녕하세요, 무엇을 도와드릴까요?' },
+      { cat: '필수·회화', word: 'madame', reading: '/madam/', pos: 'n.f.', meaning: '~부인, 여사님', exSrc: 'Madame Dupont est notre directrice.', exKo: '뒤퐁 부인은 저희 부장입니다.' },
+      { cat: '필수·회화', word: 'ami', reading: '/ami/', pos: 'n.m.', meaning: '친구', exSrc: 'C’est un ami de longue date.', exKo: '그는 오랜 친구입니다.' },
+      { cat: '필수·회화', word: 'famille', reading: '/famij/', pos: 'n.f.', meaning: '가족', exSrc: 'Je passe le week-end avec ma famille.', exKo: '저는 주말을 가족과 함께 보냅니다.' },
+      { cat: '필수·회화', word: 'travail', reading: '/tʁavaj/', pos: 'n.m.', meaning: '일, 업무', exSrc: 'Le travail commence à neuf heures.', exKo: '업무는 9시에 시작합니다.' },
+      { cat: '필수·회화', word: 'entreprise', reading: '/ɑ̃tʁəpʁiz/', pos: 'n.f.', meaning: '기업, 회사', exSrc: 'Cette entreprise produit des aliments bio.', exKo: '이 기업은 유기농 식품을 생산합니다.' },
+      { cat: '필수·회화', word: 'réunion', reading: '/ʁeynjɔ̃/', pos: 'n.f.', meaning: '회의', exSrc: 'La réunion est reportée à demain.', exKo: '회의가 내일로 연기되었습니다.' },
+      { cat: '필수·회화', word: 'client', reading: '/klijɑ̃/', pos: 'n.m.', meaning: '고객', exSrc: 'Le client a demandé un devis.', exKo: '고객이 견적서를 요청했습니다.' },
+      { cat: '필수·회화', word: 'produit', reading: '/pʁɔdɥi/', pos: 'n.m.', meaning: '제품', exSrc: 'Ce produit contient peu de sucre.', exKo: '이 제품은 당분이 적습니다.' },
+      { cat: '필수·회화', word: 'qualité', reading: '/kalite/', pos: 'n.f.', meaning: '품질', exSrc: 'Nous contrôlons la qualité à chaque étape.', exKo: '우리는 모든 단계에서 품질을 점검합니다.' },
+      { cat: '필수·회화', word: 'marché', reading: '/maʁʃe/', pos: 'n.m.', meaning: '시장', exSrc: 'Le marché asiatique se développe vite.', exKo: '아시아 시장은 빠르게 성장하고 있습니다.' },
+      { cat: '필수·회화', word: 'prix', reading: '/pʁi/', pos: 'n.m.', meaning: '가격, 상', exSrc: 'Le prix est trop élevé pour nous.', exKo: '가격이 우리에게는 너무 높습니다.' },
+      { cat: '필수·회화', word: 'contrat', reading: '/kɔ̃tʁa/', pos: 'n.m.', meaning: '계약(서)', exSrc: 'Nous signons le contrat vendredi.', exKo: '우리는 금요일에 계약서에 서명합니다.' },
+      { cat: '필수·회화', word: 'projet', reading: '/pʁɔʒɛ/', pos: 'n.m.', meaning: '프로젝트, 계획', exSrc: 'Le projet avance comme prévu.', exKo: '프로젝트가 예정대로 진행되고 있습니다.' },
+      { cat: '필수·회화', word: 'objectif', reading: '/ɔbʒɛktif/', pos: 'n.m.', meaning: '목표', exSrc: 'Notre objectif est de réduire les coûts.', exKo: '우리의 목표는 비용을 줄이는 것입니다.' },
+      { cat: '필수·회화', word: 'équipe', reading: '/ekip/', pos: 'n.f.', meaning: '팀', exSrc: 'Toute l’équipe participe à la réunion.', exKo: '팀 전원이 회의에 참여합니다.' },
+      { cat: '필수·회화', word: 'décision', reading: '/desizjɔ̃/', pos: 'n.f.', meaning: '결정', exSrc: 'La décision sera annoncée demain.', exKo: '결정은 내일 발표됩니다.' },
+      { cat: '필수·회화', word: 'augmenter', reading: '/oɡmɑ̃te/', pos: 'v.', meaning: '증가하다, 올리다', exSrc: 'Les ventes augmentent chaque année.', exKo: '매출이 해마다 증가합니다.' },
+      { cat: '필수·회화', word: 'diminuer', reading: '/diminɥe/', pos: 'v.', meaning: '감소하다, 줄이다', exSrc: 'Le coût de production a diminué.', exKo: '생산 비용이 줄었습니다.' },
+      { cat: '필수·회화', word: 'acheter', reading: '/aʃte/', pos: 'v.', meaning: '사다', exSrc: 'J’achète du pain tous les matins.', exKo: '저는 매일 아침 빵을 삽니다.' },
+      { cat: '필수·회화', word: 'vendre', reading: '/vɑ̃dʁ/', pos: 'v.', meaning: '팔다', exSrc: 'Ils vendent des produits laitiers.', exKo: '그들은 유제품을 판매합니다.' },
+      { cat: '필수·회화', word: 'manger', reading: '/mɑ̃ʒe/', pos: 'v.', meaning: '먹다', exSrc: 'Nous mangeons à midi ensemble.', exKo: '우리는 정오에 함께 식사합니다.' },
+      { cat: '필수·회화', word: 'boire', reading: '/bwaʁ/', pos: 'v.', meaning: '마시다', exSrc: 'Il faut boire beaucoup d’eau.', exKo: '물을 많이 마셔야 합니다.' },
+      { cat: '필수·회화', word: 'partir', reading: '/paʁtiʁ/', pos: 'v.', meaning: '떠나다, 출발하다', exSrc: 'Le train part à huit heures.', exKo: '기차는 8시에 출발합니다.' },
+      { cat: '필수·회화', word: 'arriver', reading: '/aʁive/', pos: 'v.', meaning: '도착하다', exSrc: 'Nous arrivons à Paris ce soir.', exKo: '우리는 오늘 저녁 파리에 도착합니다.' },
+      { cat: '필수·회화', word: 'chercher', reading: '/ʃɛʁʃe/', pos: 'v.', meaning: '찾다', exSrc: 'Je cherche un hôtel près de la gare.', exKo: '저는 역 근처 호텔을 찾고 있습니다.' },
+      { cat: '필수·회화', word: 'trouver', reading: '/tʁuve/', pos: 'v.', meaning: '발견하다, 찾아내다', exSrc: 'J’ai trouvé une solution simple.', exKo: '간단한 해결책을 찾았습니다.' },
+      { cat: '필수·회화', word: 'comprendre', reading: '/kɔ̃pʁɑ̃dʁ/', pos: 'v.', meaning: '이해하다', exSrc: 'Je ne comprends pas cette phrase.', exKo: '저는 이 문장을 이해하지 못하겠습니다.' },
+      { cat: '필수·회화', word: 'apprendre', reading: '/apʁɑ̃dʁ/', pos: 'v.', meaning: '배우다', exSrc: 'Elle apprend le français depuis un an.', exKo: '그녀는 1년째 프랑스어를 배우고 있습니다.' },
+      { cat: '필수·회화', word: 'travailler', reading: '/tʁavaje/', pos: 'v.', meaning: '일하다', exSrc: 'Je travaille dans l’agroalimentaire.', exKo: '저는 식품 산업에서 일합니다.' },
+      { cat: '필수·회화', word: 'habiter', reading: '/abite/', pos: 'v.', meaning: '살다, 거주하다', exSrc: 'Ils habitent à Séoul depuis trois ans.', exKo: '그들은 3년째 서울에 살고 있습니다.' },
+      { cat: '필수·회화', word: 'aimer', reading: '/eme/', pos: 'v.', meaning: '좋아하다, 사랑하다', exSrc: 'J’aime beaucoup la cuisine française.', exKo: '저는 프랑스 요리를 아주 좋아합니다.' },
+      { cat: '필수·회화', word: 'vouloir', reading: '/vulwaʁ/', pos: 'v.', meaning: '원하다', exSrc: 'Je voudrais un verre d’eau.', exKo: '물 한 잔을 원합니다.' },
+      { cat: '필수·회화', word: 'pouvoir', reading: '/puvwaʁ/', pos: 'v.', meaning: '~할 수 있다', exSrc: 'Vous pouvez payer par carte.', exKo: '카드로 결제하실 수 있습니다.' },
+      { cat: '필수·회화', word: 'devoir', reading: '/dəvwaʁ/', pos: 'v.', meaning: '~해야 한다', exSrc: 'Nous devons finir avant vendredi.', exKo: '우리는 금요일 전에 끝내야 합니다.' },
+      { cat: '필수·회화', word: 'important', reading: '/ɛ̃pɔʁtɑ̃/', pos: 'adj.', meaning: '중요한', exSrc: 'La sécurité est très importante.', exKo: '안전은 매우 중요합니다.' },
+      { cat: '필수·회화', word: 'facile', reading: '/fasil/', pos: 'adj.', meaning: '쉬운', exSrc: 'Cet exercice est assez facile.', exKo: '이 연습 문제는 꽤 쉽습니다.' },
+      { cat: '필수·회화', word: 'difficile', reading: '/difisil/', pos: 'adj.', meaning: '어려운', exSrc: 'La prononciation est difficile au début.', exKo: '발음은 처음에 어렵습니다.' },
+      { cat: '필수·회화', word: 'rapide', reading: '/ʁapid/', pos: 'adj.', meaning: '빠른', exSrc: 'Le TGV est très rapide.', exKo: 'TGV는 매우 빠릅니다.' },
+      { cat: '필수·회화', word: 'lent', reading: '/lɑ̃/', pos: 'adj.', meaning: '느린', exSrc: 'Internet est lent ce matin.', exKo: '오늘 아침 인터넷이 느립니다.' },
+      { cat: '필수·회화', word: 'cher', reading: '/ʃɛʁ/', pos: 'adj.', meaning: '비싼', exSrc: 'Ce restaurant est un peu cher.', exKo: '이 식당을 조금 비쌉니다.' },
+      { cat: '필수·회화', word: 'bon marché', reading: '/bɔ̃ maʁʃe/', pos: 'adj.', meaning: '저렴한', exSrc: 'Les légumes sont bon marché ici.', exKo: '여기 채소는 저렴합니다.' },
+      { cat: '필수·회화', word: 'grand', reading: '/ɡʁɑ̃/', pos: 'adj.', meaning: '큰, 큰키의', exSrc: 'Ils ont un grand bureau à Paris.', exKo: '그들은 파리에 큰 사무실이 있습니다.' },
+      { cat: '필수·회화', word: 'petit', reading: '/pəti/', pos: 'adj.', meaning: '작은', exSrc: 'Nous cherchons un petit hôtel calme.', exKo: '우리는 조용한 작은 호텔을 찾고 있습니다.' },
+      { cat: '필수·회화', word: 'nouveau', reading: '/nuvo/', pos: 'adj.', meaning: '새로운', exSrc: 'Voici le nouveau produit de la marque.', exKo: '이것이 그 브랜드의 신제품입니다.' },
+      { cat: '필수·회화', word: 'temps', reading: '/tɑ̃/', pos: 'n.m.', meaning: '시간, 날씨', exSrc: 'Je n’ai pas le temps aujourd’hui.', exKo: '오늘은 시간이 없습니다.' },
+      { cat: '필수·회화', word: 'aujourd’hui', reading: '/oʒuʁdɥi/', pos: '부사', meaning: '오늘', exSrc: 'Aujourd’hui, nous visitons l’usine.', exKo: '오늘 우리는 공장을 견학합니다.' },
+      { cat: '필수·회화', word: 'demain', reading: '/dəmɛ̃/', pos: '부사', meaning: '내일', exSrc: 'À demain matin !', exKo: '내일 아침에 봐요!' },
+      { cat: '필수·회화', word: 'hier', reading: '/jɛʁ/', pos: '부사', meaning: '어제', exSrc: 'Hier, il a plu toute la journée.', exKo: '어제는 하루 종일 비가 왔습니다.' },
+      { cat: '필수·회화', word: 'toujours', reading: '/tuʒuʁ/', pos: '부사', meaning: '항상, 여전히', exSrc: 'Il est toujours en retard.', exKo: '그는 항상 늦습니다.' },
+      { cat: '필수·회화', word: 'peut-être', reading: '/pøtɛtʁ/', pos: '부사', meaning: '아마도', exSrc: 'Peut-être qu’il viendra demain.', exKo: '아마도 그는 내일 올 것입니다.' },
+      { cat: '필수·회화', word: 'ensemble', reading: '/ɑ̃sɑ̃bl/', pos: '부사', meaning: '함께', exSrc: 'Travaillons ensemble sur ce projet.', exKo: '이 프로젝트를 함께 진행합시다.' },
+      { cat: '필수·회화', word: 'santé', reading: '/sɑ̃te/', pos: 'n.f.', meaning: '건강', exSrc: 'La santé passe avant tout.', exKo: '건강이 무엇보다 중요합니다.' },
+      { cat: '필수·회화', word: 'voyage', reading: '/vwajaʒ/', pos: 'n.m.', meaning: '여행', exSrc: 'Bon voyage et à bientôt !', exKo: '좋은 여행 되세요, 곧 만나요!' },
+      { cat: '필수·회화', word: 'cuisine', reading: '/kɥizin/', pos: 'n.f.', meaning: '요리, 주방', exSrc: 'La cuisine coréenne est très variée.', exKo: '한국 요리는 매우 다양합니다.' }
+    ];
+
     const EN_OFFLINE_FALLBACK = {
       '비즈니스': [
         { word: 'Stakeholder', reading: '/ˈsteɪkˌhoʊl.dɚ/', pos: '명사', meaning: '이해관계자', exSrc: 'We need buy-in from all key stakeholders before launch.', exKo: '출시 전에 모든 주요 이해관계자의 동의를 얻어야 합니다.' },
@@ -2874,6 +3060,146 @@
       ]
     };
 
+    // 수능 빈출 영단어 뱅크 (고난도 핵심 어휘 62개) — IPA + 품사 + 핵심 뜻 + 수능형 예문
+    const SAT_EXTENDED_BANK = [
+      { cat: '수능 빈출', word: 'ambiguous', reading: '/æmˈbɪɡjuəs/', pos: '형용사', meaning: '애매한, 모호한', exSrc: 'The results were ambiguous, so the team repeated the experiment.', exKo: '결과가 모호해서 팀은 실험을 다시 했다.' },
+      { cat: '수능 빈출', word: 'ubiquitous', reading: '/juːˈbɪkwɪtəs/', pos: '형용사', meaning: '어디에나 있는, 편재하는', exSrc: 'Smartphones have become ubiquitous in modern society.', exKo: '스마트폰은 현대 사회에서 어디에나 있게 되었다.' },
+      { cat: '수능 빈출', word: 'inevitable', reading: '/ɪnˈevɪtəbl/', pos: '형용사', meaning: '불가피한, 피할 수 없는', exSrc: 'Some degree of uncertainty is inevitable in scientific research.', exKo: '과학 연구에서는 어느 정도의 불확실성이 불가피하다.' },
+      { cat: '수능 빈출', word: 'paradigm', reading: '/ˈpærədaɪm/', pos: '명사', meaning: '패러다임, 전형적인 사고의 틀', exSrc: 'The discovery brought about a new paradigm in physics.', exKo: '그 발견은 물리학에 새로운 패러다임을 가져왔다.' },
+      { cat: '수능 빈출', word: 'phenomenon', reading: '/fəˈnɑːmɪnən/', pos: '명사', meaning: '현상', exSrc: 'Social media is a phenomenon that scholars still struggle to explain.', exKo: '소셜 미디어는 학자들이 여전히 설명하기 어려워하는 현상이다.' },
+      { cat: '수능 빈출', word: 'coherent', reading: '/koʊˈhɪrənt/', pos: '형용사', meaning: '일관성 있는, 논리 정연한', exSrc: 'A coherent argument must connect every claim to evidence.', exKo: '일관성 있는 논증은 모든 주장을 증거와 연결해야 한다.' },
+      { cat: '수능 빈출', word: 'empirical', reading: '/ɪmˈpɪrɪkl/', pos: '형용사', meaning: '경험적인, 실증적인', exSrc: 'The theory is supported by empirical data from hundreds of trials.', exKo: '그 이론은 수백 번의 시험에서 나온 실증적 데이터로 뒷받침된다.' },
+      { cat: '수능 빈출', word: 'pragmatic', reading: '/præɡˈmætɪk/', pos: '형용사', meaning: '실용적인, 실리적인', exSrc: 'She took a pragmatic approach and solved the most urgent problem first.', exKo: '그녀는 실용적인 접근으로 가장 긴급한 문제를 먼저 해결했다.' },
+      { cat: '수능 빈출', word: 'discrepancy', reading: '/dɪsˈkrepənsi/', pos: '명사', meaning: '불일치, 차이', exSrc: 'There was a large discrepancy between the two sets of data.', exKo: '두 데이터 세트 사이에는 큰 불일치가 있었다.' },
+      { cat: '수능 빈출', word: 'corroborate', reading: '/kəˈrɑːbəreɪt/', pos: '동사', meaning: '뒷받침하다, 확증하다', exSrc: 'New evidence may corroborate the witness’s account.', exKo: '새로운 증거가 목격자의 진술을 뒷받침할 수 있다.' },
+      { cat: '수능 빈출', word: 'mitigate', reading: '/ˈmɪtɪɡeɪt/', pos: '동사', meaning: '완화하다, 줄이다', exSrc: 'Planting trees can mitigate the effects of urban heat.', exKo: '나무를 심는 것은 도시 열섬의 영향을 완화할 수 있다.' },
+      { cat: '수능 빈출', word: 'perpetuate', reading: '/pərˈpetʃueɪt/', pos: '동사', meaning: '영속시키다, 계속 이어지게 하다', exSrc: 'Stereotypes are perpetuated when they go unchallenged.', exKo: '고정관념은 이의 없이 받아들여질 때 계속 이어진다.' },
+      { cat: '수능 빈출', word: 'alleviate', reading: '/əˈliːvieɪt/', pos: '동사', meaning: '경감하다, 완화하다', exSrc: 'The new policy aims to alleviate poverty in rural areas.', exKo: '새 정책은 농촌 지역의 빈곤을 경감하는 것을 목표로 한다.' },
+      { cat: '수능 빈출', word: 'deteriorate', reading: '/dɪˈtɪriəreɪt/', pos: '동사', meaning: '악화되다, 나빠지다', exSrc: 'Air quality continues to deteriorate in the industrial district.', exKo: '산업 지구의 대기 질은 계속 악화되고 있다.' },
+      { cat: '수능 빈출', word: 'fluctuate', reading: '/ˈflʌktʃueɪt/', pos: '동사', meaning: '변동하다, 오르내리다', exSrc: 'Vegetable prices fluctuate with the weather.', exKo: '채소 가격은 날씨에 따라 변동한다.' },
+      { cat: '수능 빈출', word: 'complacent', reading: '/kəmˈpleɪsnt/', pos: '형용사', meaning: '자기만족적인, 안주하는', exSrc: 'Success can make a company complacent about innovation.', exKo: '성공은 기업이 혁신에 대해 안주하게 만들 수 있다.' },
+      { cat: '수능 빈출', word: 'ambivalent', reading: '/æmˈbɪvələnt/', pos: '형용사', meaning: '양가적인, 착잡한', exSrc: 'Many people feel ambivalent about working from home.', exKo: '많은 사람들이 재택근무에 대해 양가적인 감정을 느낀다.' },
+      { cat: '수능 빈출', word: 'unprecedented', reading: '/ʌnˈpresɪdentɪd/', pos: '형용사', meaning: '전례 없는', exSrc: 'The pandemic caused unprecedented disruptions to global trade.', exKo: '그 팬데믹은 세계 무역에 전례 없는 혼란을 일으켰다.' },
+      { cat: '수능 빈출', word: 'substantiate', reading: '/səbˈstænʃieɪt/', pos: '동사', meaning: '입증하다, 입증할 증거를 대다', exSrc: 'The journalist could not substantiate her claim with documents.', exKo: '그 기자는 자신의 주장을 문서로 입증하지 못했다.' },
+      { cat: '수능 빈출', word: 'reconcile', reading: '/ˈrekənsaɪl/', pos: '동사', meaning: '화해시키다, 조화시키다', exSrc: 'It is hard to reconcile economic growth with environmental protection.', exKo: '경제 성장과 환경 보호를 조화시키기는 어렵다.' },
+      { cat: '수능 빈출', word: 'advocate', reading: '/ˈædvəkeɪt/', pos: '동사', meaning: '옹호하다, 주장하다', exSrc: 'Many scientists advocate stricter limits on carbon emissions.', exKo: '많은 과학자들이 탄소 배출에 대한 더 엄격한 제한을 주장한다.' },
+      { cat: '수능 빈출', word: 'undermine', reading: '/ˌʌndərˈmaɪn/', pos: '동사', meaning: '약화시키다, 훼손하다', exSrc: 'Constant criticism can undermine a child’s confidence.', exKo: '끊임없는 비판은 아이의 자신감을 약화시킬 수 있다.' },
+      { cat: '수능 빈출', word: 'constrain', reading: '/kənˈstreɪn/', pos: '동사', meaning: '제한하다, 강제하다', exSrc: 'Limited funding constrained the scope of the study.', exKo: '제한된 자금이 연구의 범위를 제한했다.' },
+      { cat: '수능 빈출', word: 'attribute', reading: '/əˈtrɪbjuːt/', pos: '동사', meaning: '~의 탓으로 돌리다, ~에 기인하다고 보다', exSrc: 'Researchers attribute the decline to changes in diet.', exKo: '연구자들은 그 감소를 식습관 변화 탓으로 돌린다.' },
+      { cat: '수능 빈출', word: 'derive', reading: '/dɪˈraɪv/', pos: '동사', meaning: '유래하다, 얻어 내다', exSrc: 'Many English words derive from Latin.', exKo: '많은 영어 단어가 라틴어에서 유래한다.' },
+      { cat: '수능 빈출', word: 'imply', reading: '/ɪmˈplaɪ/', pos: '동사', meaning: '암시하다, 함축하다', exSrc: 'The findings imply that sleep strongly affects memory.', exKo: '그 연구 결과는 수면이 기억에 강하게 영향을 미침을 암시한다.' },
+      { cat: '수능 빈출', word: 'infer', reading: '/ɪnˈfɜːr/', pos: '동사', meaning: '추론하다, 추측하다', exSrc: 'Readers must infer the author’s attitude from the tone.', exKo: '독자는 어조로부터 필자의 태도를 추론해야 한다.' },
+      { cat: '수능 빈출', word: 'embody', reading: '/ɪmˈbɑːdi/', pos: '동사', meaning: '구현하다, 상징하다', exSrc: 'The building embodies the architect’s belief in simplicity.', exKo: '그 건물은 단순함에 대한 건축가의 신념을 구현한다.' },
+      { cat: '수능 빈출', word: 'transcend', reading: '/trænˈsend/', pos: '동사', meaning: '초월하다, 넘어서다', exSrc: 'Great art transcends national boundaries.', exKo: '위대한 예술은 국경을 초월한다.' },
+      { cat: '수능 빈출', word: 'inherent', reading: '/ɪnˈhɪrənt/', pos: '형용사', meaning: '내재적인, 타고난', exSrc: 'Risk is inherent in every investment.', exKo: '위험은 모든 투자에 내재해 있다.' },
+      { cat: '수능 빈출', word: 'specify', reading: '/ˈspesɪfaɪ/', pos: '동사', meaning: '명시하다, 구체적으로 밝히다', exSrc: 'The contract specifies the deadline for each stage.', exKo: '계약서는 각 단계의 마감 기한을 명시하고 있다.' },
+      { cat: '수능 빈출', word: 'suppress', reading: '/səˈpres/', pos: '동사', meaning: '억압하다, 억제하다', exSrc: 'The drug suppresses the immune response.', exKo: '그 약물은 면역 반응을 억제한다.' },
+      { cat: '수능 빈출', word: 'facilitate', reading: '/fəˈsɪlɪteɪt/', pos: '동사', meaning: '촉진하다, 용이하게 하다', exSrc: 'Digital tools facilitate communication between teams.', exKo: '디지털 도구는 팀 간 의사소통을 용이하게 한다.' },
+      { cat: '수능 빈출', word: 'anticipate', reading: '/ænˈtɪsɪpeɪt/', pos: '동사', meaning: '예상하다, 예상하여 대비하다', exSrc: 'Few economists anticipated the sudden rise in inflation.', exKo: '인플레이션의 갑작스러운 상승을 예상한 경제학자는 거의 없었다.' },
+      { cat: '수능 빈출', word: 'compensate', reading: '/ˈkɑːmpenseɪt/', pos: '동사', meaning: '보상하다, 상쇄하다', exSrc: 'The company compensated residents for the noise.', exKo: '그 회사는 소음에 대해 주민들에게 보상했다.' },
+      { cat: '수능 빈출', word: 'distribute', reading: '/dɪˈstrɪbjuːt/', pos: '동사', meaning: '분배하다, 유통하다', exSrc: 'Wealth is distributed unevenly across the region.', exKo: '부는 그 지역에 불균등하게 분배되어 있다.' },
+      { cat: '수능 빈출', word: 'integrate', reading: '/ˈɪntɪɡreɪt/', pos: '동사', meaning: '통합하다, 융합하다', exSrc: 'The school integrates art into its science curriculum.', exKo: '그 학교는 예술을 과학 교육 과정에 통합한다.' },
+      { cat: '수능 빈출', word: 'transform', reading: '/trænsˈfɔːrm/', pos: '동사', meaning: '변모시키다, 완전히 바꾸다', exSrc: 'The internet has transformed the way we read.', exKo: '인터넷은 우리가 읽는 방식을 완전히 바꾸어 놓았다.' },
+      { cat: '수능 빈출', word: 'preserve', reading: '/prɪˈzɜːrv/', pos: '동사', meaning: '보존하다, 유지하다', exSrc: 'National parks preserve wildlife for future generations.', exKo: '국립공원은 미래 세대를 위해 야생 동물을 보존한다.' },
+      { cat: '수능 빈출', word: 'utilize', reading: '/ˈjuːtəlaɪz/', pos: '동사', meaning: '활용하다, 이용하다', exSrc: 'Farmers utilize drones to monitor their crops.', exKo: '농부들은 작물을 관찰하기 위해 드론을 활용한다.' },
+      { cat: '수능 빈출', word: 'vulnerable', reading: '/ˈvʌlnərəbl/', pos: '형용사', meaning: '취약한, 상처받기 쉬운', exSrc: 'Coastal cities are vulnerable to rising sea levels.', exKo: '해안 도시들은 해수면 상승에 취약하다.' },
+      { cat: '수능 빈출', word: 'skeptical', reading: '/ˈskeptɪkl/', pos: '형용사', meaning: '회의적인, 의심하는', exSrc: 'Scientists remain skeptical of the early results.', exKo: '과학자들은 초기 결과에 대해 여전히 회의적이다.' },
+      { cat: '수능 빈출', word: 'plausible', reading: '/ˈplɔːzəbl/', pos: '형용사', meaning: '그럴듯한, 타당해 보이는', exSrc: 'The theory sounds plausible but lacks evidence.', exKo: '그 이론은 그럴듯하게 들리지만 증거가 부족하다.' },
+      { cat: '수능 빈출', word: 'explicit', reading: '/ɪkˈsplɪsɪt/', pos: '형용사', meaning: '명백한, 명시적인', exSrc: 'The instructions were explicit about the safety rules.', exKo: '안내문은 안전 수칙에 대해 명시적이었다.' },
+      { cat: '수능 빈출', word: 'implicit', reading: '/ɪmˈplɪsɪt/', pos: '형용사', meaning: '암묵적인, 내포된', exSrc: 'There is an implicit assumption that growth will continue.', exKo: '성장이 계속될 것이라는 암묵적인 가정이 있다.' },
+      { cat: '수능 빈출', word: 'comprehensive', reading: '/ˌkɑːmprɪˈhensɪv/', pos: '형용사', meaning: '포괄적인, 종합적인', exSrc: 'The report offers a comprehensive review of the industry.', exKo: '그 보고서는 업계에 대한 포괄적인 검토를 제시한다.' },
+      { cat: '수능 빈출', word: 'profound', reading: '/prəˈfaʊnd/', pos: '형용사', meaning: '심오한, 지대한', exSrc: 'The invention had a profound effect on daily life.', exKo: '그 발명은 일상생활에 지대한 영향을 미쳤다.' },
+      { cat: '수능 빈출', word: 'arbitrary', reading: '/ˈɑːrbɪtreri/', pos: '형용사', meaning: '자의적인, 임의의', exSrc: 'The rule seemed arbitrary and unfair to many students.', exKo: '그 규칙은 많은 학생에게 자의적이고 불공평해 보였다.' },
+      { cat: '수능 빈출', word: 'legitimate', reading: '/lɪˈdʒɪtɪmət/', pos: '형용사', meaning: '정당한, 합법적인', exSrc: 'Citizens have a legitimate right to know the facts.', exKo: '시민들은 사실을 알 정당한 권리가 있다.' },
+      { cat: '수능 빈출', word: 'reluctant', reading: '/rɪˈlʌktənt/', pos: '형용사', meaning: '꺼리는, 마음내키지 않는', exSrc: 'Many workers are reluctant to return to the office.', exKo: '많은 직장인들이 사무실로 복귀하기를 꺼린다.' },
+      { cat: '수능 빈출', word: 'sufficient', reading: '/səˈfɪʃnt/', pos: '형용사', meaning: '충분한', exSrc: 'The evidence is not sufficient to prove the claim.', exKo: '그 증거는 주장을 입증하기에 충분하지 않다.' },
+      { cat: '수능 빈출', word: 'equivalent', reading: '/ɪˈkwɪvələnt/', pos: '형용사', meaning: '동등한, 맞먹는', exSrc: 'One hour of study is equivalent to two hours of review.', exKo: '한 시간의 학습은 두 시간의 복습과 맞먹는다.' },
+      { cat: '수능 빈출', word: 'distinguish', reading: '/dɪˈstɪŋɡwɪʃ/', pos: '동사', meaning: '구별하다, 구분하다', exSrc: 'Young children cannot always distinguish fact from fiction.', exKo: '어린아이들은 사실과 허구를 항상 구별하지는 못한다.' },
+      { cat: '수능 빈출', word: 'accumulate', reading: '/əˈkjuːmjəleɪt/', pos: '동사', meaning: '축적하다, 쌓이다', exSrc: 'Plastic waste continues to accumulate in the ocean.', exKo: '플라스틱 쓰레기가 바다에 계속 쌓이고 있다.' },
+      { cat: '수능 빈출', word: 'diminish', reading: '/dɪˈmɪnɪʃ/', pos: '동사', meaning: '줄어들다, 약화되다', exSrc: 'Public trust in the media has diminished over the years.', exKo: '언론에 대한 대중의 신뢰는 수년간 약화되었다.' },
+      { cat: '수능 빈출', word: 'provoke', reading: '/prəˈvoʊk/', pos: '동사', meaning: '유발하다, 자극하다', exSrc: 'The proposal provoked intense debate among residents.', exKo: '그 제안은 주민들 사이에서 격렬한 논쟁을 유발했다.' },
+      { cat: '수능 빈출', word: 'relevance', reading: '/ˈreləvəns/', pos: '명사', meaning: '관련성, 적절성', exSrc: 'The judge questioned the relevance of the testimony.', exKo: '판사는 그 증언의 관련성에 의문을 제기했다.' },
+      { cat: '수능 빈출', word: 'consensus', reading: '/kənˈsensəs/', pos: '명사', meaning: '합의, 의견 일치', exSrc: 'The committee finally reached a consensus.', exKo: '위원회는 마침내 합의에 도달했다.' },
+      { cat: '수능 빈출', word: 'coexist', reading: '/ˌkoʊɪɡˈzɪst/', pos: '동사', meaning: '공존하다', exSrc: 'Wild animals and humans must learn to coexist.', exKo: '야생 동물과 인간은 공존하는 법을 배워야 한다.' },
+      { cat: '수능 빈출', word: 'predominant', reading: '/prɪˈdɑːmɪnənt/', pos: '형용사', meaning: '지배적인, 두드러진', exSrc: 'Rice is the predominant crop in this region.', exKo: '쌀은 이 지역의 지배적인 작물이다.' },
+      { cat: '수능 빈출', word: 'incentive', reading: '/ɪnˈsentɪv/', pos: '명사', meaning: '장려책, 동기 부여', exSrc: 'Tax cuts provide an incentive for companies to invest.', exKo: '감세는 기업에 투자할 동기를 제공한다.' },
+      { cat: '수능 빈출', word: 'sustainable', reading: '/səˈsteɪnəbl/', pos: '형용사', meaning: '지속 가능한', exSrc: 'We need a sustainable model of food production.', exKo: '우리에게는 지속 가능한 식량 생산 모델이 필요하다.' }
+    ];
+
+    // 영어 확장 보충 뱅크 (주제별 15개 추가, 기존 폴백 뱅크와 합산)
+    const EN_EXTRA_BANK = [
+      { cat: '비즈니스', word: 'Negotiate', reading: '/nɪˈɡoʊ.ʃi.eɪt/', pos: '동사', meaning: '협상하다', exSrc: 'We negotiated a better price with the supplier.', exKo: '우리는 공급업체와 저렴한 가격을 협상했습니다.' },
+      { cat: '비즈니스', word: 'Revenue', reading: '/ˈrev.ə.nuː/', pos: '명사', meaning: '매출, 수익', exSrc: 'Annual revenue grew by 18 percent last year.', exKo: '지난해 연간 매출이 18퍼센트 증가했습니다.' },
+      { cat: '비즈니스', word: 'Strategy', reading: '/ˈstræt̬.ə.dʒi/', pos: '명사', meaning: '전략', exSrc: 'Our growth strategy focuses on overseas markets.', exKo: '우리의 성장 전략은 해외 시장에 초점을 맞춥니다.' },
+      { cat: '비즈니스', word: 'Proposal', reading: '/prəˈpoʊ.zəl/', pos: '명사', meaning: '제안서, 제안', exSrc: 'The client approved our proposal within a week.', exKo: '고객이 일주일 만에 우리 제안서를 승인했습니다.' },
+      { cat: '비즈니스', word: 'Budget', reading: '/ˈbʌdʒ.ɪt/', pos: '명사', meaning: '예산', exSrc: 'The project was completed within budget.', exKo: '그 프로젝트는 예산 내에서 완료되었습니다.' },
+      { cat: '비즈니스', word: 'Investor', reading: '/ɪnˈvest.ɚ/', pos: '명사', meaning: '투자자', exSrc: 'Investors asked many questions about the risk.', exKo: '투자자들이 위험에 대해 많은 질문을 했습니다.' },
+      { cat: '비즈니스', word: 'Partnership', reading: '/ˈpɑːrt.nɚ.ʃɪp/', pos: '명사', meaning: '제휴, 파트너십', exSrc: 'The partnership with a local firm expanded our reach.', exKo: '현지 기업과의 제휴로 우리의 영향력이 확대되었습니다.' },
+      { cat: '비즈니스', word: 'Forecast', reading: '/ˈfɔːr.kæst/', pos: '명사/동사', meaning: '예측, 전망하다', exSrc: 'The sales forecast for next quarter looks strong.', exKo: '다음 분기 매출 전망은 긍정적으로 보입니다.' },
+      { cat: '비즈니스', word: 'Liability', reading: '/ˌlaɪ.əˈbɪl.ə.t̬i/', pos: '명사', meaning: '법적 책임, 부채', exSrc: 'The contract limits our liability for delays.', exKo: '계약은 지연에 대한 우리의 법적 책임을 제한합니다.' },
+      { cat: '비즈니스', word: 'Compliance', reading: '/kəmˈplaɪ.əns/', pos: '명사', meaning: '규정 준수', exSrc: 'Compliance with food safety rules is mandatory.', exKo: '식품 안전 규정 준수는 의무 사항입니다.' },
+      { cat: '비즈니스', word: 'Quarterly', reading: '/ˈkwɔːr.tɚ.li/', pos: '형용사/부사', meaning: '분기별의, 분기마다', exSrc: 'We review quarterly results every January.', exKo: '우리는 매년 1월에 분기 실적을 검토합니다.' },
+      { cat: '비즈니스', word: 'Merger', reading: '/ˈmɝː.dʒɚ/', pos: '명사', meaning: '합병', exSrc: 'The merger created the largest firm in the sector.', exKo: '그 합병으로 업계 최대 기업이 탄생했습니다.' },
+      { cat: '비즈니스', word: 'Workflow', reading: '/ˈwɝːk.floʊ/', pos: '명사', meaning: '업무 흐름, 작업 절차', exSrc: 'Automation simplified the approval workflow.', exKo: '자동화로 승인 절차가 간소화되었습니다.' },
+      { cat: '비즈니스', word: 'Invoice', reading: '/ˈɪn.vɔɪs/', pos: '명사', meaning: '청구서, 송장', exSrc: 'Please send the invoice by the end of the month.', exKo: '월말까지 청구서를 보내 주세요.' },
+      { cat: '비즈니스', word: 'Delegation', reading: '/ˌdel.əˈɡeɪ.ʃən/', pos: '명사', meaning: '위임, 대표단', exSrc: 'Good delegation gives the team room to grow.', exKo: '적절한 위임은 팀이 성장할 여지를 줍니다.' },
+      { cat: 'AI·데이터', word: 'Neural', reading: '/ˈnʊr.əl/', pos: '형용사', meaning: '신경의, 신경망의', exSrc: 'Neural networks learn patterns from raw data.', exKo: '신경망은 원시 데이터에서 패턴을 학습합니다.' },
+      { cat: 'AI·데이터', word: 'Cluster', reading: '/ˈklʌs.tɚ/', pos: '명사/동사', meaning: '군집, 무리 짓다', exSrc: 'The algorithm groups similar customers into clusters.', exKo: '그 알고리즘은 비슷한 고객을 군집으로 묶습니다.' },
+      { cat: 'AI·데이터', word: 'Regression', reading: '/rɪˈɡreʃ.ən/', pos: '명사', meaning: '회귀 (수치 예측 분석)', exSrc: 'We used regression to estimate future demand.', exKo: '우리는 미래 수요를 추정하기 위해 회귀 분석을 사용했습니다.' },
+      { cat: 'AI·데이터', word: 'Classification', reading: '/ˌklæs.ə.fəˈkeɪ.ʃən/', pos: '명사', meaning: '분류', exSrc: 'Image classification accuracy reached 95 percent.', exKo: '이미지 분류 정확도가 95퍼센트에 도달했습니다.' },
+      { cat: 'AI·데이터', word: 'Gradient', reading: '/ˈɡreɪ.di.ənt/', pos: '명사', meaning: '기울기, 경사', exSrc: 'The model updates weights using the gradient.', exKo: '모델은 기울기를 이용해 가중치를 갱신합니다.' },
+      { cat: 'AI·데이터', word: 'Vector', reading: '/ˈvek.tɚ/', pos: '명사', meaning: '벡터, 방향과 크기의 수치', exSrc: 'Each document is stored as a numeric vector.', exKo: '각 문서는 수치 벡터로 저장됩니다.' },
+      { cat: 'AI·데이터', word: 'Bias', reading: '/ˈbaɪ.əs/', pos: '명사', meaning: '편향, 치우침', exSrc: 'The training data introduced a gender bias.', exKo: '학습 데이터가 성별 편향을 초래했습니다.' },
+      { cat: 'AI·데이터', word: 'Validation', reading: '/ˌvæl.əˈdeɪ.ʃən/', pos: '명사', meaning: '검증, 유효성 확인', exSrc: 'The validation set checks how well the model generalizes.', exKo: '검증 세트는 모델이 얼마나 일반화되는지 확인합니다.' },
+      { cat: 'AI·데이터', word: 'Hyperparameter', reading: '/ˌhaɪ.pɚ.pəˈræm.ə.t̬ɚ/', pos: '명사', meaning: '초매개변수, 하이퍼파라미터', exSrc: 'Tuning one hyperparameter can change accuracy a lot.', exKo: '하이퍼파라미터 하나를 조정하는 것만으로 정확도가 크게 달라질 수 있습니다.' },
+      { cat: 'AI·데이터', word: 'Segmentation', reading: '/ˌseɡ.menˈteɪ.ʃən/', pos: '명사', meaning: '분할, 세분화', exSrc: 'Customer segmentation helps tailor marketing messages.', exKo: '고객 세분화는 마케팅 메시지를 맞춤화하는 데 도움이 됩니다.' },
+      { cat: 'AI·데이터', word: 'Deployment', reading: '/dɪˈplɔɪ.mənt/', pos: '명사', meaning: '배포, 전개', exSrc: 'Model deployment takes only a few minutes now.', exKo: '이제 모델 배포는 몇 분밖에 걸리지 않습니다.' },
+      { cat: 'AI·데이터', word: 'Annotation', reading: '/ˌæn.əˈteɪ.ʃən/', pos: '명사', meaning: '주석, 라벨링', exSrc: 'Manual annotation of the dataset took three weeks.', exKo: '데이터셋 수동 라벨링에 3주가 걸렸습니다.' },
+      { cat: 'AI·데이터', word: 'Robustness', reading: '/roʊˈbʌst.nəs/', pos: '명사', meaning: '견고성, 강인성', exSrc: 'We tested the robustness of the model against noise.', exKo: '우리는 노이즈에 대한 모델의 견고성을 시험했습니다.' },
+      { cat: 'AI·데이터', word: 'Scalability', reading: '/ˌskeɪ.ləˈbɪl.ə.t̬i/', pos: '명사', meaning: '확장성', exSrc: 'Scalability was the main concern in the design review.', exKo: '확장성이 설계 검토의 주요 관심사였습니다.' },
+      { cat: 'AI·데이터', word: 'Automation', reading: '/ˌɑː.t̬əˈmeɪ.ʃən/', pos: '명사', meaning: '자동화', exSrc: 'Automation reduced the time spent on reports.', exKo: '자동화로 보고서 작성에 드는 시간이 줄었습니다.' },
+      { cat: '식품·바이오', word: 'Enzyme', reading: '/ˈen.zaɪm/', pos: '명사', meaning: '효소', exSrc: 'The enzyme breaks down lactose in milk.', exKo: '그 효소는 우유 속 유당을 분해합니다.' },
+      { cat: '식품·바이오', word: 'Microorganism', reading: '/ˌmaɪ.kroʊˈɔːr.ɡən.ɪ.zəm/', pos: '명사', meaning: '미생물', exSrc: 'Harmful microorganisms grow quickly in warm conditions.', exKo: '유해 미생물은 따뜻한 환경에서 빠르게 증식합니다.' },
+      { cat: '식품·바이오', word: 'Viscosity', reading: '/vɪˈskɑː.sə.t̬i/', pos: '명사', meaning: '점도, 끈적임', exSrc: 'Heating changes the viscosity of the sauce.', exKo: '가열하면 소스의 점도가 변합니다.' },
+      { cat: '식품·바이오', word: 'Antioxidant', reading: '/ˌæn.t̬iˈɑːk.sɪ.dənt/', pos: '명사', meaning: '항산화제, 산화 방지 물질', exSrc: 'Green tea is rich in antioxidants.', exKo: '녹차에는 항산화 물질이 풍부합니다.' },
+      { cat: '식품·바이오', word: 'Amino acid', reading: '/əˈmiː.noʊ ˈæs.ɪd/', pos: '명사', meaning: '아미노산', exSrc: 'The bar contains all essential amino acids.', exKo: '그 바에는 필수 아미노산이 모두 들어 있습니다.' },
+      { cat: '식품·바이오', word: 'Nutritional', reading: '/nuːˈtrɪʃ.ən.əl/', pos: '형용사', meaning: '영양의, 영양상의', exSrc: 'The label lists the nutritional value per serving.', exKo: '라벨에는 1회 제공량당 영양가가 표시되어 있습니다.' },
+      { cat: '식품·바이오', word: 'Sensory', reading: '/ˈsen.sɚ.i/', pos: '형용사', meaning: '감각의, 관능의', exSrc: 'Sensory evaluation rates taste, smell, and texture.', exKo: '관능 평가는 맛, 냄새, 질감을 평가합니다.' },
+      { cat: '식품·바이오', word: 'Homogenization', reading: '/həˌmɑː.dʒə.nəˈzeɪ.ʃən/', pos: '명사', meaning: '균질화', exSrc: 'Homogenization keeps the milk from separating.', exKo: '균질화는 우유가 분리되지 않게 합니다.' },
+      { cat: '식품·바이오', word: 'Refrigeration', reading: '/rɪˌfrɪdʒ.əˈreɪ.ʃən/', pos: '명사', meaning: '냉장, 냉각', exSrc: 'Proper refrigeration slows bacterial growth.', exKo: '적절한 냉장은 세균 증식을 늦춥니다.' },
+      { cat: '식품·바이오', word: 'Pathogen', reading: '/ˈpæθ.ə.dʒən/', pos: '명사', meaning: '병원체, 병원균', exSrc: 'Cooking kills most foodborne pathogens.', exKo: '조리하면 대부분의 식품 매개 병원균이 사멸합니다.' },
+      { cat: '식품·바이오', word: 'Additive', reading: '/ˈæd.ə.t̬ɪv/', pos: '명사', meaning: '첨가물', exSrc: 'The label lists every additive used in the product.', exKo: '라벨에는 제품에 사용된 모든 첨가물이 표시되어 있습니다.' },
+      { cat: '식품·바이오', word: 'Hygiene', reading: '/ˈhaɪ.dʒiːn/', pos: '명사', meaning: '위생', exSrc: 'Strict hygiene rules apply in the packing room.', exKo: '포장실에는 엄격한 위생 규칙이 적용됩니다.' },
+      { cat: '식품·바이오', word: 'Extraction', reading: '/ɪkˈstræk.ʃən/', pos: '명사', meaning: '추출', exSrc: 'Cold extraction preserves more flavor.', exKo: '저온 추출은 더 많은 풍미를 보존합니다.' },
+      { cat: '식품·바이오', word: 'Digestion', reading: '/daɪˈdʒes.tʃən/', pos: '명사', meaning: '소화', exSrc: 'Fiber supports healthy digestion.', exKo: '식이섬유는 건강한 소화를 돕습니다.' },
+      { cat: '식품·바이오', word: 'Quality assurance', reading: '/ˈkwɑː.lə.t̬i əˌʃʊr.əns/', pos: '명사', meaning: '품질 보증', exSrc: 'Quality assurance checks every batch before shipping.', exKo: '품질 보증팀은 출하 전 모든 배치를 점검합니다.' },
+      { cat: '일상회화', word: 'Hang out', reading: '/ˈhæŋ ˌaʊt/', pos: '동사구', meaning: '어울려 놀다, 시간을 보내다', exSrc: 'Do you want to hang out this weekend?', exKo: '이번 주말에 같이 놀래요?' },
+      { cat: '일상회화', word: 'Run into', reading: '/ˈrʌn ˌɪn.tuː/', pos: '동사구', meaning: '우연히 만나다', exSrc: 'I ran into an old friend at the station.', exKo: '역에서 옛 친구를 우연히 만났습니다.' },
+      { cat: '일상회화', word: 'Show up', reading: '/ˈʃoʊ ˌʌp/', pos: '동사구', meaning: '나타나다, 참석하다', exSrc: 'Only half the team showed up for the meeting.', exKo: '팀의 절반만 회의에 참석했습니다.' },
+      { cat: '일상회화', word: 'Look forward to', reading: '/ˈlʊk ˌfɔːr.wɚd tuː/', pos: '동사구', meaning: '기대하다', exSrc: 'I look forward to hearing from you.', exKo: '연락 기다리겠습니다.' },
+      { cat: '일상회화', word: 'Get along', reading: '/ˈɡet əˌlɔːŋ/', pos: '동사구', meaning: '사이좋게 지내다', exSrc: 'The two roommates get along very well.', exKo: '두 룸메이트는 아주 사이좋게 지냅니다.' },
+      { cat: '일상회화', word: 'Break down', reading: '/ˈbreɪk ˌdaʊn/', pos: '동사구', meaning: '고장 나다, 무너지다', exSrc: 'My car broke down on the way home.', exKo: '집에 오는 길에 차가 고장 났습니다.' },
+      { cat: '일상회화', word: 'Turn down', reading: '/ˈtɝːn ˌdaʊn/', pos: '동사구', meaning: '거절하다, 줄이다', exSrc: 'She turned down the offer politely.', exKo: '그녀는 그 제안을 정중히 거절했습니다.' },
+      { cat: '일상회화', word: 'Come up with', reading: '/ˈkʌm ˌʌp wɪð/', pos: '동사구', meaning: '생각해 내다, 고안하다', exSrc: 'He came up with a simple solution.', exKo: '그가 간단한 해결책을 생각해 냈습니다.' },
+      { cat: '일상회화', word: 'Pick up', reading: '/ˈpɪk ˌʌp/', pos: '동사구', meaning: '데리러 가다, 집어 들다', exSrc: 'Can you pick up the kids after school?', exKo: '학교 끝나고 아이들 데리러 갈 수 있어요?' },
+      { cat: '일상회화', word: 'Take off', reading: '/ˈteɪk ˌɔːf/', pos: '동사구', meaning: '이륙하다, 벗다', exSrc: 'The flight takes off at seven in the morning.', exKo: '비행기는 아침 7시에 이륙합니다.' },
+      { cat: '일상회화', word: 'Put off', reading: '/ˈpʊt ˌɔːf/', pos: '동사구', meaning: '미루다', exSrc: 'Do not put off the checkup any longer.', exKo: '건강검진을 더 이상 미루지 마세요.' },
+      { cat: '일상회화', word: 'Bring up', reading: '/ˈbrɪŋ ˌʌp/', pos: '동사구', meaning: '화제를 꺼내다, 기르다', exSrc: 'She brought up the budget issue at the end.', exKo: '그녀가 마지막에 예산 문제를 꺼냈습니다.' },
+      { cat: '일상회화', word: 'Work out', reading: '/ˈwɝːk ˌaʊt/', pos: '동사구', meaning: '운동하다, 잘 풀리다', exSrc: 'Everything worked out in the end.', exKo: '결국 모든 일이 잘 풀렸습니다.' },
+      { cat: '일상회화', word: 'End up', reading: '/ˈend ˌʌp/', pos: '동사구', meaning: '결국 ~하게 되다', exSrc: 'We ended up staying home all weekend.', exKo: '우리는 결국 주말 내내 집에 있었습니다.' },
+      { cat: '일상회화', word: 'Give up', reading: '/ˈɡɪv ˌʌp/', pos: '동사구', meaning: '포기하다', exSrc: 'Never give up on learning a language.', exKo: '언어 학습을 절대 포기하지 마세요.' }
+    ];
+
+    // 영어 통합 확장 뱅크 (기존 주제별 폴백 + 보충 = 108개, 50개 선택 시에도 충분)
+    const EN_EXTENDED_BANK = (() => {
+      const merged = [];
+      Object.keys(EN_OFFLINE_FALLBACK).forEach(cat => {
+        EN_OFFLINE_FALLBACK[cat].forEach(item => merged.push({ cat, ...item }));
+      });
+      EN_EXTRA_BANK.forEach(item => merged.push(item));
+      return merged;
+    })();
+
     const KEYWORD_TO_EN_QUERY = {
       '비즈니스': 'business',
       'AI·데이터': 'artificial intelligence',
@@ -2885,7 +3211,7 @@
       expanded: false,
       preset: '비즈니스',
       keyword: '비즈니스',
-      count: 15,
+      count: 30,
       loading: false,
       progressText: '',
       fallbackOffer: null, // { topic, count }
@@ -2918,37 +3244,80 @@
       if (toastMessage) showToast(toastMessage);
     }
 
-    function createOfflineFallbackDeck(topic, count) {
-      const cleanTopic = (topic || '비즈니스').trim();
-      if (isJapaneseTopic(cleanTopic)) {
-        const shuffled = [...JP_EXTENDED_BANK].sort(() => Math.random() - 0.5);
-        const picked = shuffled.slice(0, Math.max(10, count));
-        return {
-          id: `auto-fb-${Date.now()}`,
-          title: `${cleanTopic} · 온라인 수집 (${picked.length})`,
-          lang: 'ja-JP',
-          cards: picked.map((item, idx) => ({
-            id: `fb-jp-${Date.now()}-${idx}`,
-            word: item.word, reading: item.reading, pos: item.pos,
-            meaning: item.meaning, exSrc: item.exSrc, exKo: item.exKo,
-            memo: `내장 확장 뱅크 (${item.cat})`
-          }))
-        };
+    function isChineseTopic(topic) {
+      const t = (topic || '').toLowerCase();
+      return t.includes('중국') || t.includes('중화') || t.includes('hsk') || t.includes('병음') || t.includes('chinese') || t.includes('china') || /[\u4e00-\u9faf]/.test(t);
+    }
+
+    function isFrenchTopic(topic) {
+      const t = (topic || '').toLowerCase();
+      return t.includes('프랑스') || t.includes('불어') || t.includes('franc') || t.includes('french') || t.includes('fle') || t.includes('paris') || t.includes('파리');
+    }
+
+    function isSATTopic(topic) {
+      const t = (topic || '').toLowerCase();
+      return t.includes('수능') || t.includes('모의고사') || t.includes('빈출');
+    }
+
+    function resolveBankForTopic(topic) {
+      if (isSATTopic(topic)) return { bank: SAT_EXTENDED_BANK, lang: 'en-US' };
+      if (isChineseTopic(topic)) return { bank: ZH_EXTENDED_BANK, lang: 'zh' };
+      if (isFrenchTopic(topic)) return { bank: FR_EXTENDED_BANK, lang: 'fr' };
+      if (isJapaneseTopic(topic)) return { bank: JP_EXTENDED_BANK, lang: 'ja-JP' };
+      return { bank: EN_EXTENDED_BANK, lang: 'en-US' };
+    }
+
+    function shuffleArray(arr) {
+      const copy = [...arr];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
       }
-      const bankKey = EN_OFFLINE_FALLBACK[cleanTopic] ? cleanTopic : '비즈니스';
-      const sourceList = EN_OFFLINE_FALLBACK[bankKey];
-      const picked = sourceList.slice(0, Math.max(10, Math.min(count, sourceList.length)));
+      return copy;
+    }
+
+    // 주제와 같은 분류·뜻을 가진 항목을 먼저 뽑고, 모자라면 같은 언어의 다른 항목으로 채움
+    function pickBankItems(bank, rawTopic, count) {
+      const topic = (rawTopic || '').trim();
+      const matched = bank.filter(item =>
+        (item.cat && topic.includes(item.cat)) ||
+        (topic && (item.meaning || '').includes(topic)) ||
+        (topic && (item.exKo || '').includes(topic))
+      );
+      const others = bank.filter(item => !matched.includes(item));
+      const pool = [...shuffleArray(matched), ...shuffleArray(others)];
+      const selected = [];
+      const seen = new Set();
+      for (const item of pool) {
+        if (selected.length >= count) break;
+        if (seen.has(item.word)) continue;
+        seen.add(item.word);
+        selected.push(item);
+      }
+      return selected;
+    }
+
+    function buildDeckFromBankItems(items, topic, lang) {
+      const prefix = lang === 'zh' ? 'fb-zh' : lang === 'fr' ? 'fb-fr' : lang === 'ja-JP' ? 'fb-jp' : 'fb-en';
       return {
         id: `auto-fb-${Date.now()}`,
-        title: `${cleanTopic} · 온라인 수집 (${picked.length})`,
-        lang: 'en-US',
-        cards: picked.map((item, idx) => ({
-          id: `fb-en-${Date.now()}-${idx}`,
+        title: `${topic} · 내장 뱅크 (${items.length})`,
+        lang,
+        cards: items.map((item, idx) => ({
+          id: `${prefix}-${Date.now()}-${idx}`,
           word: item.word, reading: item.reading, pos: item.pos,
           meaning: item.meaning, exSrc: item.exSrc, exKo: item.exKo,
-          memo: `${cleanTopic} 핵심 어휘`
+          memo: item.cat ? `내장 확장 뱅크 (${item.cat})` : '내장 확장 뱅크'
         }))
       };
+    }
+
+    function createOfflineFallbackDeck(topic, count) {
+      const cleanTopic = (topic || '비즈니스').trim();
+      const want = Math.max(10, Number(count) || 10);
+      const { bank, lang } = resolveBankForTopic(cleanTopic);
+      const picked = pickBankItems(bank, cleanTopic, Math.min(want, bank.length));
+      return buildDeckFromBankItems(picked, cleanTopic, lang);
     }
 
     // 타임아웃 지원 fetch 유틸리티
@@ -2979,7 +3348,7 @@
     // 경로 A: API 키 없이 무료 자동 수집 실행 (병렬 워커 풀 + 타임아웃 + 차단 감지)
     async function runFreeOnlineWordFetch(topicInput, targetCount) {
       const rawTopic = (topicInput || '').trim() || '비즈니스';
-      const count = Number(targetCount) || 15;
+      const count = Number(targetCount) || 30;
 
       autoFetchState.loading = true;
       autoFetchState.fallbackOffer = null;
@@ -2987,51 +3356,26 @@
       renderAllAutoFetchPanels();
 
       try {
-        // 1) 일본어 주제 처리: 내장 확장 뱅크 우선 추출
-        if (isJapaneseTopic(rawTopic)) {
-          const matched = JP_EXTENDED_BANK.filter(item =>
-            rawTopic.includes(item.cat) ||
-            item.meaning.includes(rawTopic) ||
-            item.exKo.includes(rawTopic)
-          );
-          const others = JP_EXTENDED_BANK.filter(item => !matched.includes(item));
-          const pool = [
-            ...matched.sort(() => Math.random() - 0.5),
-            ...others.sort(() => Math.random() - 0.5)
-          ];
+        // 1) 일본어·중국어·프랑스어·수능 주제: 내장 확장 뱅크에서 우선 추출
+        if (isJapaneseTopic(rawTopic) || isChineseTopic(rawTopic) || isFrenchTopic(rawTopic) || isSATTopic(rawTopic)) {
+          const { bank, lang } = resolveBankForTopic(rawTopic);
+          const pool = pickBankItems(bank, rawTopic, Math.min(count, bank.length));
 
           const selected = [];
-          const seen = new Set();
           for (const item of pool) {
-            if (selected.length >= count) break;
-            if (seen.has(item.word)) continue;
-            seen.add(item.word);
             selected.push(item);
             autoFetchState.progressText = `가져오는 중… ${selected.length}/${count}`;
             renderAllAutoFetchPanels();
-            await new Promise(r => setTimeout(r, 20));
+            await new Promise(r => setTimeout(r, 15));
           }
 
-          const newDeck = {
-            id: `auto-jp-${Date.now()}`,
-            title: `${rawTopic} · 온라인 수집 (${selected.length})`,
-            lang: 'ja-JP',
-            cards: selected.map((item, idx) => ({
-              id: `jp-auto-${Date.now()}-${idx}`,
-              word: item.word,
-              reading: item.reading,
-              pos: item.pos,
-              meaning: item.meaning,
-              exSrc: item.exSrc,
-              exKo: item.exKo,
-              memo: `${item.cat} 필수 어휘`
-            }))
-          };
+          const newDeck = buildDeckFromBankItems(selected, rawTopic, lang);
+          newDeck.id = `auto-bank-${Date.now()}`;
 
           autoFetchState.loading = false;
           autoFetchState.progressText = '';
           renderAllAutoFetchPanels();
-          applyGeneratedDeck(newDeck, `${count}개 중 ${selected.length}개 수집 완료!`);
+          applyGeneratedDeck(newDeck, `${rawTopic} · ${selected.length}개 수집 완료!`);
           return;
         }
 
@@ -3225,6 +3569,29 @@
           }
         }
 
+        // 50·30개 요청 시 끊김 없이 채우기: 온라인 번역이 모자라면 내장 확장 뱅크로 보충
+        if (collectedCards.length < count) {
+          const already = new Set(collectedCards.map(c => c.word.toLowerCase()));
+          const supplements = pickBankItems(EN_EXTENDED_BANK, rawTopic, EN_EXTENDED_BANK.length)
+            .filter(item => !already.has(item.word.toLowerCase()));
+          for (const item of supplements) {
+            if (collectedCards.length >= count) break;
+            already.add(item.word.toLowerCase());
+            collectedCards.push({
+              id: `en-bank-${Date.now()}-${collectedCards.length}`,
+              word: item.word,
+              reading: item.reading,
+              pos: item.pos,
+              meaning: item.meaning,
+              exSrc: item.exSrc,
+              exKo: item.exKo,
+              memo: `내장 확장 뱅크 (${item.cat})`
+            });
+          }
+          autoFetchState.progressText = `가져오는 중… ${collectedCards.length}/${count}`;
+          renderAllAutoFetchPanels();
+        }
+
         if (collectedCards.length === 0) {
           throw new Error('단어 번역 수집에 실패했습니다.');
         }
@@ -3242,15 +3609,24 @@
 
         const msg = collectedCards.length < count
           ? `${count}개 중 ${collectedCards.length}개 수집 완료`
-          : `${rawTopic} · 온라인 수집 (${collectedCards.length}) 생성 완료!`;
+          : `${rawTopic} · ${collectedCards.length}개 생성 완료!`;
         applyGeneratedDeck(newDeck, msg);
       } catch (err) {
         console.warn('Free online word fetch failed:', err);
         autoFetchState.loading = false;
         autoFetchState.progressText = '';
-        autoFetchState.fallbackOffer = { topic: rawTopic, count };
-        renderAllAutoFetchPanels();
-        showToast('온라인 단어 수집에 실패했습니다. 아래 폴백 생성을 이용해 보세요.');
+        // CORS·통신 제한으로 무료 API가 막혀도 내장 확장 뱅크로 자동 폴백 (수동 버튼 없이 바로 생성)
+        try {
+          const fbDeck = createOfflineFallbackDeck(rawTopic, count);
+          autoFetchState.fallbackOffer = null;
+          renderAllAutoFetchPanels();
+          applyGeneratedDeck(fbDeck, `온라인 수집이 제한되어 내장 영단어 뱅크로 ${fbDeck.cards.length}개를 만들었습니다.`);
+        } catch (fbErr) {
+          console.warn('Offline fallback failed:', fbErr);
+          autoFetchState.fallbackOffer = { topic: rawTopic, count };
+          renderAllAutoFetchPanels();
+          showToast('단어를 가져오지 못했습니다. 주제를 바꿔 다시 시도해 주세요.');
+        }
       }
     }
 
@@ -3278,7 +3654,7 @@
 반드시 아래 JSON 스키마 객체만 반환하세요:
 {
   "title": "간결한 단어장 제목",
-  "lang": "en-US 또는 ja-JP 또는 ko-KR",
+  "lang": "en-US 또는 ja-JP 또는 zh 또는 fr 또는 ko-KR",
   "cards": [
     {
       "word": "단어 또는 표기",
@@ -3345,7 +3721,7 @@
 
     // 메인 화면 & 모달 공용 패널 렌더러
     function buildAutoFetchPanelHTML(contextId) {
-      const presets = ['비즈니스', 'AI·데이터', '식품·바이오', '일상회화', '일본어 JLPT'];
+      const presets = ['비즈니스', 'AI·데이터', '식품·바이오', '일상회화', '수능 빈출 영단어', '일본어 JLPT', '중국어 HSK·회화', '프랑스어 필수·회화'];
       const hasKey = !!(settings.geminiApiKey && settings.geminiApiKey.trim());
       const isMain = contextId === 'main';
       const isExpanded = isMain ? autoFetchState.expanded : true;
@@ -3377,12 +3753,13 @@
             </div>
 
             <div class="fetch-input-row">
-              <input type="text" class="input-field" data-af-keyword value="${escapeHtml(autoFetchState.keyword)}" placeholder="주제·키워드 (예: 비즈니스, 일본어 JLPT, 마케팅)" />
-              <select class="fetch-count-select" data-af-count aria-label="수집 개수">
-                <option value="10" ${autoFetchState.count === 10 ? 'selected' : ''}>10개</option>
-                <option value="15" ${autoFetchState.count === 15 ? 'selected' : ''}>15개</option>
-                <option value="20" ${autoFetchState.count === 20 ? 'selected' : ''}>20개</option>
-              </select>
+              <input type="text" class="input-field" data-af-keyword value="${escapeHtml(autoFetchState.keyword)}" placeholder="주제·키워드 (예: 수능 빈출 영단어, 중국어 HSK, 마케팅)" />
+              <div class="fetch-count-row" role="group" aria-label="수집 개수">
+                <span class="fetch-count-label">개수</span>
+                ${[10, 30, 50].map(n => `
+                  <button type="button" class="count-chip ${autoFetchState.count === n ? 'active' : ''}" data-af-count="${n}" aria-pressed="${autoFetchState.count === n}">${n}개</button>
+                `).join('')}
+              </div>
             </div>
 
             <button type="button" class="btn-fetch-main" data-af-run-free ${autoFetchState.loading ? 'disabled' : ''}>
@@ -3394,7 +3771,7 @@
 
             ${autoFetchState.fallbackOffer ? `
               <div class="fallback-prompt-box">
-                <div>오프라인 또는 통신 제한으로 실시간 수집이 중단되었습니다. <strong>"${escapeHtml(autoFetchState.fallbackOffer.topic)}"</strong> 내장 폴백 뱅크로 최소 10개 카드를 바로 생성할까요?</div>
+                <div>오프라인 또는 통신 제한으로 실시간 수집이 중단되었습니다. <strong>"${escapeHtml(autoFetchState.fallbackOffer.topic)}"</strong> 내장 폴백 뱅크로 최대 ${autoFetchState.fallbackOffer.count}개 카드를 바로 생성할까요?</div>
                 <div class="btn-row">
                   <button type="button" class="btn-solid" style="padding:7px 12px; font-size:12.5px;" data-af-accept-fallback>내장 폴백으로 생성</button>
                   <button type="button" class="btn-outline" style="padding:7px 12px; font-size:12.5px;" data-af-dismiss-fallback>닫기</button>
@@ -3456,15 +3833,12 @@
         });
       }
 
-      const cntSelect = container.querySelector('[data-af-count]');
-      if (cntSelect) {
-        cntSelect.addEventListener('change', (e) => {
-          autoFetchState.count = Number(e.target.value) || 15;
-          document.querySelectorAll('[data-af-count]').forEach(el => {
-            if (el !== e.target) el.value = e.target.value;
-          });
+      container.querySelectorAll('[data-af-count]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          autoFetchState.count = Number(btn.dataset.afCount) || 30;
+          renderAllAutoFetchPanels();
         });
-      }
+      });
 
       const runFreeBtn = container.querySelector('[data-af-run-free]');
       if (runFreeBtn) {
