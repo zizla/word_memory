@@ -1,0 +1,3574 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>눌러 — 한 손 클리커 스마트 단어장</title>
+
+  <!-- Fonts: Noto Serif KR, Pretendard, JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Noto+Serif+KR:wght@500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+  <style>
+    /* ==========================================================================
+       1. 디자인 토큰 & 테마 변수 (한지 라이트 / 먹야 다크)
+       ========================================================================== */
+    :root {
+      --bg: #F7F4EE;
+      --surface: #FFFDF9;
+      --surface-subtle: #F0ECE3;
+      --text: #1F1E1C;
+      --text-sub: #6E6A63;
+      --border: #E5DFD3;
+      --accent: #B83B2A;      /* 주인(朱印) 포인트 */
+      --accent-soft: rgba(184, 59, 42, 0.1);
+      --secondary: #2E5A6B;   /* 담청(淡靑) 보조 포인트 */
+      --secondary-soft: rgba(46, 90, 107, 0.1);
+      --shadow-card: 0 12px 32px -8px rgba(31, 30, 28, 0.08), 0 2px 6px -1px rgba(31, 30, 28, 0.04);
+      --shadow-btn: 0 2px 8px rgba(31, 30, 28, 0.06);
+      --radius-card: 20px;
+      --radius-btn: 12px;
+      --font-sans: 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      --font-serif: 'Noto Serif KR', Georgia, serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    [data-theme="dark"] {
+      --bg: #161615;
+      --surface: #1F1E1C;
+      --surface-subtle: #282724;
+      --text: #EFECE6;
+      --text-sub: #9A958C;
+      --border: #32302C;
+      --accent: #D95B43;
+      --accent-soft: rgba(217, 91, 67, 0.16);
+      --secondary: #5B92A6;
+      --secondary-soft: rgba(91, 146, 166, 0.16);
+      --shadow-card: 0 16px 36px -8px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.25);
+      --shadow-btn: 0 2px 8px rgba(0, 0, 0, 0.3);
+    }
+
+    /* ==========================================================================
+       2. 기본 리셋 & 레이아웃 뼈대
+       ========================================================================== */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    html, body {
+      height: 100%;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      line-height: 1.5;
+      transition: background-color 0.25s ease, color 0.25s ease;
+      overflow-x: hidden;
+    }
+
+    /* 미세한 한지 질감 오버레이 */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.025;
+      background-image: radial-gradient(var(--text) 0.5px, transparent 0.5px);
+      background-size: 14px 14px;
+      z-index: 0;
+    }
+
+    .app-shell {
+      position: relative;
+      z-index: 1;
+      max-width: 680px;
+      min-height: 100dvh;
+      margin: 0 auto;
+      padding: 14px 16px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    /* ==========================================================================
+       3. 상단 헤더 & 덱/모드 컨트롤 바
+       ========================================================================== */
+    .top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    /* 주인(인장) 스타일 로고 마크 */
+    .seal-badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 34px;
+      height: 34px;
+      border: 1.5px solid var(--accent);
+      color: var(--accent);
+      border-radius: 8px;
+      font-family: var(--font-serif);
+      font-weight: 700;
+      font-size: 16px;
+      letter-spacing: -0.05em;
+      background: var(--accent-soft);
+      flex-shrink: 0;
+    }
+
+    .brand-title {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-sub {
+      font-size: 11px;
+      color: var(--text-sub);
+      display: block;
+      margin-top: -2px;
+    }
+
+    .top-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      height: 36px;
+      padding: 0 11px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: var(--shadow-btn);
+      transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.2s, border-color 0.2s;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.95);
+    }
+
+    .icon-btn.active {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .icon-btn svg {
+      width: 16px;
+      height: 16px;
+      stroke-width: 1.9;
+    }
+
+    /* 덱 선택 및 학습 필터 바 */
+    .control-strip {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .deck-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .deck-select {
+      flex: 1;
+      height: 40px;
+      padding: 0 12px;
+      border-radius: 11px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      outline: none;
+    }
+
+    .deck-select:focus {
+      border-color: var(--secondary);
+    }
+
+    .pill-tabs {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    .pill-tabs::-webkit-scrollbar { display: none; }
+
+    .pill-tab {
+      flex-shrink: 0;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-sub);
+      font-size: 12.5px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .pill-tab.active {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+      font-weight: 600;
+    }
+
+    /* ==========================================================================
+       4. 메인 플래시카드 & 퀴즈 스테이지 (스프링 물리 애니메이션)
+       ========================================================================== */
+    .stage-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      min-height: 340px;
+      position: relative;
+    }
+
+    /* 진행률 미세 바 */
+    .progress-track {
+      width: 100%;
+      height: 3px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 10px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--accent);
+      width: 0%;
+      transition: width 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    .flashcard {
+      width: 100%;
+      min-height: 350px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      padding: 22px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      position: relative;
+      cursor: pointer;
+      user-select: none;
+      transition: transform 0.24s cubic-bezier(0.22, 1.35, 0.36, 1), box-shadow 0.2s ease, border-color 0.2s ease;
+    }
+
+    /* 카드 전환/뒤집기 손맛 애니메이션 클래스 */
+    .flashcard.bump-flip {
+      transform: scale(0.975);
+    }
+    .flashcard.slide-next {
+      animation: cardNextSpring 0.28s cubic-bezier(0.22, 1.25, 0.36, 1);
+    }
+    .flashcard.slide-prev {
+      animation: cardPrevSpring 0.28s cubic-bezier(0.22, 1.25, 0.36, 1);
+    }
+
+    @keyframes cardNextSpring {
+      0% { opacity: 0.4; transform: translateX(22px) scale(0.98); }
+      100% { opacity: 1; transform: translateX(0) scale(1); }
+    }
+    @keyframes cardPrevSpring {
+      0% { opacity: 0.4; transform: translateX(-22px) scale(0.98); }
+      100% { opacity: 1; transform: translateX(0) scale(1); }
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 12.5px;
+      color: var(--text-sub);
+    }
+
+    .card-counter {
+      font-family: var(--font-mono);
+      font-weight: 500;
+      letter-spacing: 0.02em;
+    }
+
+    .card-badges {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .status-chip {
+      padding: 3px 9px;
+      border-radius: 6px;
+      font-size: 11.5px;
+      font-weight: 600;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text-sub);
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .status-chip.memorized {
+      background: var(--secondary-soft);
+      border-color: var(--secondary);
+      color: var(--secondary);
+    }
+
+    .status-chip.review {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .card-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 20px 4px;
+    }
+
+    .pos-tag {
+      display: inline-block;
+      font-size: 11.5px;
+      font-weight: 600;
+      color: var(--secondary);
+      background: var(--secondary-soft);
+      padding: 2px 8px;
+      border-radius: 6px;
+      margin-bottom: 10px;
+    }
+
+    .word-main {
+      font-family: var(--font-serif);
+      font-size: clamp(28px, 6vw, 40px);
+      font-weight: 700;
+      line-height: 1.25;
+      letter-spacing: -0.02em;
+      word-break: keep-all;
+      margin-bottom: 8px;
+    }
+
+    .word-reading {
+      font-family: var(--font-mono);
+      font-size: 15px;
+      color: var(--text-sub);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .tts-inline-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text);
+      cursor: pointer;
+      margin-left: 4px;
+      transition: transform 0.12s, background 0.15s;
+    }
+    .tts-inline-btn:active { transform: scale(0.9); }
+
+    /* 뒷면 영역 */
+    .back-divider {
+      width: 48px;
+      height: 1.5px;
+      background: var(--border);
+      margin: 18px auto;
+    }
+
+    .word-meaning {
+      font-size: clamp(19px, 4.2vw, 23px);
+      font-weight: 700;
+      color: var(--accent);
+      margin-bottom: 14px;
+      word-break: keep-all;
+    }
+
+    .example-box {
+      width: 100%;
+      background: var(--surface-subtle);
+      border-radius: 12px;
+      padding: 13px 15px;
+      text-align: left;
+      font-size: 14px;
+      border: 1px solid var(--border);
+    }
+
+    .example-en {
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 4px;
+      line-height: 1.45;
+    }
+
+    .example-ko {
+      color: var(--text-sub);
+      font-size: 13px;
+      line-height: 1.45;
+    }
+
+    .memo-note {
+      margin-top: 10px;
+      font-size: 12.5px;
+      color: var(--secondary);
+      text-align: left;
+      width: 100%;
+      padding: 0 4px;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-sub);
+      padding-top: 8px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .mode-indicator {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .dot-live {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    /* 4지선다 퀴즈 스타일 */
+    .quiz-options {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .quiz-opt-btn {
+      width: 100%;
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 14px;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      transition: all 0.15s;
+    }
+
+    .quiz-opt-btn:hover {
+      border-color: var(--secondary);
+    }
+
+    .quiz-opt-btn.correct {
+      background: var(--secondary-soft);
+      border-color: var(--secondary);
+      color: var(--secondary);
+      font-weight: 700;
+    }
+
+    .quiz-opt-btn.wrong {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .quiz-num {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      width: 22px;
+      height: 22px;
+      border-radius: 6px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ==========================================================================
+       5. 하단 엄지 터치 컨트롤러 (한 손 조작 최적화)
+       ========================================================================== */
+    .bottom-dock {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .quick-mark-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .mark-btn {
+      height: 38px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-sub);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+
+    .mark-btn.active-mem {
+      border-color: var(--secondary);
+      background: var(--secondary-soft);
+      color: var(--secondary);
+    }
+
+    .mark-btn.active-rev {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+      color: var(--accent);
+    }
+
+    .thumb-controls {
+      display: grid;
+      grid-template-columns: 1fr 1.4fr 1fr;
+      gap: 10px;
+    }
+
+    .thumb-btn {
+      height: 54px;
+      border-radius: 14px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 2px;
+      box-shadow: var(--shadow-btn);
+      transition: transform 0.1s cubic-bezier(0.2, 0.8, 0.2, 1), background-color 0.15s;
+    }
+
+    .thumb-btn:active {
+      transform: scale(0.95);
+    }
+
+    .thumb-btn.primary {
+      background: var(--text);
+      color: var(--bg);
+      border-color: var(--text);
+    }
+
+    .thumb-btn .key-hint {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      opacity: 0.65;
+    }
+
+    /* ==========================================================================
+       6. 모달 다이얼로그 (설정 / 단어 추가·관리 / AI·가져오기)
+       ========================================================================== */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(20, 19, 18, 0.55);
+      backdrop-filter: blur(3px);
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      z-index: 100;
+      padding: 12px;
+    }
+
+    @media (min-width: 640px) {
+      .modal-backdrop {
+        align-items: center;
+      }
+    }
+
+    .modal-backdrop.open {
+      display: flex;
+    }
+
+    .modal-sheet {
+      width: 100%;
+      max-width: 540px;
+      max-height: 88dvh;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      box-shadow: var(--shadow-card);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      animation: modalUp 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    @keyframes modalUp {
+      from { opacity: 0; transform: translateY(16px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .modal-title {
+      font-family: var(--font-serif);
+      font-size: 17px;
+      font-weight: 700;
+    }
+
+    .modal-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--surface-subtle);
+      color: var(--text);
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .modal-tabs {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      background: var(--surface-subtle);
+      padding: 0 12px;
+      gap: 4px;
+      overflow-x: auto;
+    }
+
+    .modal-tab {
+      padding: 10px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-sub);
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid transparent;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .modal-tab.active {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .modal-body {
+      padding: 18px 20px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .section-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .section-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .helper-text {
+      font-size: 12px;
+      color: var(--text-sub);
+      line-height: 1.45;
+    }
+
+    .radio-card-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .radio-card {
+      padding: 12px 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      transition: border-color 0.15s;
+    }
+
+    .radio-card.selected {
+      border-color: var(--accent);
+      background: var(--accent-soft);
+    }
+
+    .radio-card-title {
+      font-size: 13.5px;
+      font-weight: 700;
+    }
+
+    .radio-card-desc {
+      font-size: 12px;
+      color: var(--text-sub);
+    }
+
+    /* 키 바인딩 그리드 */
+    .bind-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .bind-item {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12.5px;
+    }
+
+    .bind-key-btn {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .bind-key-btn.listening {
+      border-color: var(--accent);
+      background: var(--accent);
+      color: #fff;
+      animation: pulse 1s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.65; }
+    }
+
+    .key-monitor {
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: var(--surface-subtle);
+      border: 1px dashed var(--border);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--text-sub);
+      text-align: center;
+    }
+
+    /* 폼 입력 요소 */
+    .input-field, .textarea-field {
+      width: 100%;
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      outline: none;
+    }
+
+    .input-field:focus, .textarea-field:focus {
+      border-color: var(--secondary);
+    }
+
+    .textarea-field {
+      min-height: 88px;
+      resize: vertical;
+      font-family: var(--font-mono);
+      font-size: 12px;
+    }
+
+    .btn-row {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn-solid {
+      padding: 10px 16px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    .btn-outline {
+      padding: 10px 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+
+    /* 토글 스위치 행 */
+    .toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .toggle-row:last-child { border-bottom: none; }
+
+    /* 토스트 알림 */
+    .toast {
+      position: fixed;
+      top: 18px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: var(--text);
+      color: var(--bg);
+      padding: 9px 16px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.22s ease;
+      z-index: 200;
+      box-shadow: var(--shadow-card);
+      white-space: nowrap;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .hidden { display: none !important; }
+
+    /* ==========================================================================
+       7. AI·온라인 단어 자동 가져오기 패널 (메인 & 모달 공용 스타일)
+       ========================================================================== */
+    .auto-fetch-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow-btn);
+      overflow: hidden;
+      transition: border-color 0.2s ease;
+    }
+
+    .auto-fetch-header {
+      width: 100%;
+      padding: 10px 14px;
+      background: transparent;
+      border: none;
+      color: var(--text);
+      font-family: var(--font-sans);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .auto-fetch-header-left {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      min-width: 0;
+    }
+
+    .auto-fetch-badge {
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--accent);
+      background: var(--accent-soft);
+      padding: 2px 7px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .auto-fetch-summary {
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .auto-fetch-toggle-txt {
+      font-size: 12px;
+      color: var(--text-sub);
+      flex-shrink: 0;
+      font-weight: 500;
+    }
+
+    .auto-fetch-body {
+      padding: 12px 14px 14px;
+      border-top: 1px dashed var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: var(--bg);
+    }
+
+    .preset-chip-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+    }
+
+    .preset-chip {
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text-sub);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .preset-chip.active, .preset-chip:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+      background: var(--accent-soft);
+      font-weight: 600;
+    }
+
+    .fetch-input-row {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .fetch-input-row .input-field {
+      flex: 1 1 150px;
+      min-width: 0;
+      height: 38px;
+      padding: 0 11px;
+      background: var(--surface);
+    }
+
+    .fetch-count-select {
+      height: 38px;
+      padding: 0 8px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .btn-fetch-main {
+      width: 100%;
+      height: 40px;
+      border-radius: 10px;
+      border: none;
+      background: var(--accent);
+      color: #fff;
+      font-family: var(--font-sans);
+      font-size: 13.5px;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    .btn-fetch-main:disabled {
+      opacity: 0.72;
+      cursor: wait;
+    }
+
+    .btn-fetch-main:active:not(:disabled) {
+      transform: scale(0.98);
+    }
+
+    .mini-spinner {
+      width: 14px;
+      height: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.35);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin360 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin360 {
+      to { transform: rotate(360deg); }
+    }
+
+    .fallback-prompt-box {
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid var(--accent);
+      background: var(--accent-soft);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      font-size: 12.5px;
+    }
+
+    .gemini-sub-details {
+      border-top: 1px solid var(--border);
+      padding-top: 8px;
+      margin-top: 2px;
+    }
+
+    .gemini-sub-details summary {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--secondary);
+      cursor: pointer;
+      list-style: none;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .gemini-sub-details summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .gemini-sub-box {
+      margin-top: 8px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .key-status-pill {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      padding: 2px 7px;
+      border-radius: 6px;
+      background: var(--secondary-soft);
+      color: var(--secondary);
+    }
+
+    .advanced-prompt-details {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: var(--bg);
+    }
+
+    .advanced-prompt-details summary {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-sub);
+      cursor: pointer;
+    }
+
+    /* 전역 오류 하단 안내 바 */
+    .global-error-bar {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 12px;
+      max-width: 656px;
+      margin: 0 auto;
+      padding: 9px 14px;
+      border-radius: 10px;
+      background: #9E2A2B;
+      color: #FFFDF9;
+      font-size: 12.5px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+      z-index: 300;
+    }
+
+    .global-error-text {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+    }
+
+    .global-error-close {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      color: #fff;
+      border-radius: 6px;
+      padding: 3px 8px;
+      font-size: 12px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <!-- 1. 상단 헤더 -->
+    <header class="top-bar">
+      <div class="brand">
+        <div class="seal-badge" aria-hidden="true">눌</div>
+        <div>
+          <span class="brand-title">눌러</span>
+          <span class="brand-sub" id="deckLangBadge">클리커 스마트 단어장</span>
+        </div>
+      </div>
+
+      <div class="top-actions">
+        <button type="button" class="icon-btn" id="btnSoundToggle" title="타건음 전환">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 5L6 9H2v6h4l5 4V5z"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          <span id="soundLabel">목탁</span>
+        </button>
+
+        <button type="button" class="icon-btn" id="btnThemeToggle" title="라이트/다크 전환">
+          <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        </button>
+
+        <button type="button" class="icon-btn" id="btnOpenModal" title="단어장 및 리모컨 설정">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+          <span>설정·덱</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- 1.5 메인 화면 최전면 접이식 AI·온라인 단어 자동 가져오기 패널 -->
+    <section id="mainAutoFetchMount" aria-label="AI·온라인 단어 자동 가져오기"></section>
+
+    <!-- 2. 덱 선택 & 학습 필터 -->
+    <section class="control-strip">
+      <div class="deck-row">
+        <select id="deckSelect" class="deck-select" aria-label="단어장 선택"></select>
+        <button type="button" class="icon-btn" id="btnAutoTts" title="카드 전환 시 자동 발음">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+          <span id="autoTtsLabel">자동발음</span>
+        </button>
+      </div>
+
+      <div class="pill-tabs" role="tablist">
+        <button type="button" class="pill-tab active" data-study-mode="sequential">순차 학습</button>
+        <button type="button" class="pill-tab" data-study-mode="shuffle">랜덤 셔플</button>
+        <button type="button" class="pill-tab" data-study-mode="review">다시 보기만 (★)</button>
+        <button type="button" class="pill-tab" data-study-mode="quiz">4지선다 퀴즈</button>
+      </div>
+    </section>
+
+    <!-- 3. 메인 학습 카드 스테이지 -->
+    <main class="stage-wrapper">
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <article class="flashcard" id="flashcard" tabindex="0">
+        <div class="card-header">
+          <span class="card-counter" id="cardCounter">1 / 15</span>
+          <div class="card-badges">
+            <span class="status-chip" id="cardStatusBadge">미학습</span>
+          </div>
+        </div>
+
+        <!-- 플래시카드 뷰 -->
+        <div class="card-body" id="cardBodyView">
+          <span class="pos-tag hidden" id="cardPos"></span>
+          <h1 class="word-main" id="cardWord">단어</h1>
+          <div class="word-reading">
+            <span id="cardReading">/reading/</span>
+            <button type="button" class="tts-inline-btn" id="btnSpeakCard" title="발음 듣기 (↓)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </button>
+          </div>
+
+          <div id="cardBackArea" class="hidden" style="width: 100%;">
+            <div class="back-divider"></div>
+            <div class="word-meaning" id="cardMeaning">한국어 뜻</div>
+            <div class="example-box" id="cardExampleBox">
+              <div class="example-en" id="cardExSrc"></div>
+              <div class="example-ko" id="cardExKo"></div>
+            </div>
+            <div class="memo-note hidden" id="cardMemo"></div>
+          </div>
+        </div>
+
+        <!-- 4지선다 퀴즈 뷰 -->
+        <div class="card-body hidden" id="quizBodyView">
+          <span class="pos-tag">4지선다 점검</span>
+          <h2 class="word-main" id="quizWord">단어</h2>
+          <div class="word-reading">
+            <span id="quizReading"></span>
+            <button type="button" class="tts-inline-btn" id="btnSpeakQuiz" title="발음 듣기">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+            </button>
+          </div>
+          <div class="quiz-options" id="quizOptions"></div>
+        </div>
+
+        <div class="card-footer">
+          <span class="mode-indicator">
+            <span class="dot-live"></span>
+            <span id="remoteModeStatus">방향키 모드</span>
+          </span>
+          <span id="cardHintText">클릭 또는 Space로 뜻 확인</span>
+        </div>
+      </article>
+    </main>
+
+    <!-- 4. 하단 엄지 터치 컨트롤러 -->
+    <footer class="bottom-dock">
+      <div class="quick-mark-row">
+        <button type="button" class="mark-btn" id="btnMarkReview">★ 다시 보기</button>
+        <button type="button" class="mark-btn" id="btnMarkMemorized">✓ 외움 완료</button>
+      </div>
+
+      <div class="thumb-controls">
+        <button type="button" class="thumb-btn" id="btnPrev">
+          <span>이전</span>
+          <span class="key-hint">← / PgUp</span>
+        </button>
+        <button type="button" class="thumb-btn primary" id="btnFlip">
+          <span id="btnFlipLabel">뜻 뒤집기</span>
+          <span class="key-hint">Space / Enter</span>
+        </button>
+        <button type="button" class="thumb-btn" id="btnNext">
+          <span>다음</span>
+          <span class="key-hint">→ / PgDn</span>
+        </button>
+      </div>
+    </footer>
+  </div>
+
+  <!-- ==========================================================================
+       설정 / 단어 추가 / 가져오기·AI 모달
+       ========================================================================== -->
+  <div class="modal-backdrop" id="modalBackdrop" role="dialog" aria-modal="true">
+    <div class="modal-sheet">
+      <div class="modal-header">
+        <h2 class="modal-title">단어장 및 리모컨 설정</h2>
+        <button type="button" class="modal-close" id="btnCloseModal" aria-label="닫기">✕</button>
+      </div>
+
+      <div class="modal-tabs">
+        <button type="button" class="modal-tab active" data-modal-tab="tabRemote">클리커·타건음</button>
+        <button type="button" class="modal-tab" data-modal-tab="tabAddWord">단어 추가</button>
+        <button type="button" class="modal-tab" data-modal-tab="tabDataSync">가져오기·AI·공유</button>
+      </div>
+
+      <div class="modal-body">
+        <!-- 탭 1: 클리커 및 타건음 설정 -->
+        <div id="tabRemote" class="tab-pane">
+          <div class="section-group">
+            <div class="section-label">블루투스 클리커 동작 방식</div>
+            <div class="radio-card-list" id="remotePresetList">
+              <div class="radio-card selected" data-preset="standard">
+                <div class="radio-card-title">1. 기본 / 방향키 모드 (다버튼 리모컨 추천)</div>
+                <div class="radio-card-desc">→ / PgDn / Space: 뜻 공개 후 다음 · ← / PgUp: 이전 · ↑ / Enter: 뒤집기 · ↓: 발음</div>
+              </div>
+              <div class="radio-card" data-preset="onebutton">
+                <div class="radio-card-title">2. 원버튼 순환 모드 (1버튼 링·셀카 리모컨용)</div>
+                <div class="radio-card-desc">→ / PgDn / Space 버튼 하나만 반복 클릭하여 [앞면 → 뜻 공개 → 다음 카드] 순환</div>
+              </div>
+              <div class="radio-card" data-preset="custom">
+                <div class="radio-card-title">3. 커스텀 키 바인딩 (직접 키 할당)</div>
+                <div class="radio-card-desc">아래에서 각 동작 버튼을 누른 뒤 리모컨 키를 눌러 원하는 신호로 매핑</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="section-group">
+            <div class="section-label">키 테스트 & 커스텀 바인딩</div>
+            <div class="key-monitor" id="keyTestMonitor">리모컨 버튼을 누르면 감지된 키 코드가 여기에 표시됩니다</div>
+            <div class="bind-grid" id="customBindGrid">
+              <div class="bind-item">
+                <span>다음 / 진행</span>
+                <button type="button" class="bind-key-btn" data-bind-action="next">ArrowRight</button>
+              </div>
+              <div class="bind-item">
+                <span>이전 카드</span>
+                <button type="button" class="bind-key-btn" data-bind-action="prev">ArrowLeft</button>
+              </div>
+              <div class="bind-item">
+                <span>뒤집기</span>
+                <button type="button" class="bind-key-btn" data-bind-action="flip">Enter</button>
+              </div>
+              <div class="bind-item">
+                <span>발음 듣기</span>
+                <button type="button" class="bind-key-btn" data-bind-action="tts">ArrowDown</button>
+              </div>
+            </div>
+            <p class="helper-text">※ 안내: 일부 스마트폰 브라우저(iOS/안드로이드)에서는 볼륨(+, -) 방식 리모컨 신호가 OS 음량 조절에 가로채질 수 있습니다. 페이지 넘김(방향키/PageUp·Down) 모드를 지원하는 클리커 사용을 권장합니다.</p>
+          </div>
+
+          <div class="section-group">
+            <div class="section-label">손맛 · 타건음 및 햅틱</div>
+            <div class="toggle-row">
+              <div>
+                <div style="font-size:13.5px; font-weight:600;">기계식 타건음 종류</div>
+                <div class="helper-text">카드 전환·뒤집기 시 합성 사운드</div>
+              </div>
+              <select id="soundStyleSelect" class="input-field" style="width:auto;">
+                <option value="moktak">저음 목탁 (절제됨)</option>
+                <option value="blue">청축 키캡 (경쾌함)</option>
+                <option value="off">무음</option>
+              </select>
+            </div>
+            <div class="toggle-row">
+              <div>
+                <div style="font-size:13.5px; font-weight:600;">모바일 진동 피드백</div>
+                <div class="helper-text">지원 기기에서 미세한 클릭 진동(12ms)</div>
+              </div>
+              <input type="checkbox" id="hapticCheckbox" checked style="width:18px; height:18px; accent-color:var(--accent);" />
+            </div>
+          </div>
+        </div>
+
+        <!-- 탭 2: 커스텀 단어 추가 -->
+        <div id="tabAddWord" class="tab-pane hidden">
+          <div class="section-group">
+            <div class="section-label">현재 단어장에 새 카드 추가</div>
+            <p class="helper-text">추가된 카드는 현재 선택된 단어장에 즉시 반영되며 브라우저에 자동 저장됩니다.</p>
+            <input type="text" id="addWordInput" class="input-field" placeholder="단어 또는 한자 (필수) 예: Serendipity" />
+            <input type="text" id="addReadingInput" class="input-field" placeholder="발음기호 또는 후리가나 예: /ˌser.ənˈdɪp.ə.ti/" />
+            <input type="text" id="addPosInput" class="input-field" placeholder="품사 (선택) 예: 명사" />
+            <input type="text" id="addMeaningInput" class="input-field" placeholder="한국어 뜻 (필수) 예: 뜻밖의 행운, 우연한 발견" />
+            <input type="text" id="addExSrcInput" class="input-field" placeholder="예문 원문 (선택)" />
+            <input type="text" id="addExKoInput" class="input-field" placeholder="예문 해석 (선택)" />
+            <input type="text" id="addMemoInput" class="input-field" placeholder="학습 메모 (선택)" />
+            <button type="button" class="btn-solid" id="btnSubmitNewWord">+ 현재 단어장에 카드 추가</button>
+          </div>
+        </div>
+
+        <!-- 탭 3: 가져오기 / 내보내기 / URL 동기화 / AI 프롬프트 -->
+        <div id="tabDataSync" class="tab-pane hidden">
+          <!-- 모달 내 첫 섹션: AI·온라인 단어 자동 가져오기 -->
+          <div id="modalAutoFetchMount"></div>
+
+          <div class="section-group">
+            <div class="section-label">텍스트 붙여넣기 (JSON / CSV / 엑셀·노션 탭 구분)</div>
+            <textarea id="pasteImportArea" class="textarea-field" placeholder="JSON을 붙여넣거나, 엑셀/구글시트에서 [단어 | 발음 | 뜻 | 예문 | 해석] 열을 복사해 붙여넣으세요."></textarea>
+            <div class="btn-row">
+              <input type="text" id="newDeckTitleInput" class="input-field" style="flex:1;" placeholder="새 단어장 이름 (예: 토익 필수 50)" />
+              <button type="button" class="btn-solid" id="btnImportText">불러오기</button>
+            </div>
+          </div>
+
+          <div class="section-group">
+            <div class="section-label">파일 업로드 & JSON 내보내기</div>
+            <div class="btn-row">
+              <label class="btn-outline" style="cursor:pointer;">
+                <span>JSON / CSV / TSV 파일 열기</span>
+                <input type="file" id="fileUploadInput" accept=".json,.csv,.tsv,.txt" class="hidden" />
+              </label>
+              <button type="button" class="btn-outline" id="btnExportJson">현재 덱 JSON 내보내기</button>
+            </div>
+          </div>
+
+          <div class="section-group">
+            <div class="section-label">온라인 JSON URL 동기화</div>
+            <p class="helper-text">GitHub Raw JSON 또는 공개 JSON 주소를 입력해 불러옵니다. 공유 URL을 복사하면 폰과 노트북에서 동일한 단어장을 바로 열 수 있습니다.</p>
+            <div class="btn-row">
+              <input type="url" id="remoteUrlInput" class="input-field" style="flex:1;" placeholder="https://raw.githubusercontent.com/.../deck.json" />
+              <button type="button" class="btn-solid" id="btnFetchUrl">URL 로드</button>
+            </div>
+            <button type="button" class="btn-outline" id="btnCopyShareUrl">현재 URL 공유 링크 복사 (?deck=...)</button>
+          </div>
+
+          <details class="advanced-prompt-details">
+            <summary>고급: 프롬프트 직접 복사</summary>
+            <div class="section-group" style="margin-top:10px;">
+              <p class="helper-text">외부 AI 채팅창에 직접 붙여넣어 호환 JSON을 뽑고 싶을 때 사용하세요.</p>
+              <button type="button" class="btn-outline" id="btnCopyAiPrompt">AI 단어장 생성 프롬프트 복사</button>
+            </div>
+          </details>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 토스트 알림 -->
+  <div class="toast" id="toastMsg"></div>
+
+  <!-- 전역 오류 안내 바 (평상시 숨김) -->
+  <div class="global-error-bar hidden" id="globalErrorBar" role="alert">
+    <span class="global-error-text" id="globalErrorText"></span>
+    <button type="button" class="global-error-close" id="btnCloseGlobalError" aria-label="오류 안내 닫기">닫기</button>
+  </div>
+
+  <script>
+    /* ==========================================================================
+       0. 전역 오류 안전망 (window.onerror / unhandledrejection / console.error)
+       ========================================================================== */
+    (function setupGlobalErrorGuard() {
+      const origConsoleError = console.error.bind(console);
+
+      function showGlobalErrorBanner(msg) {
+        const bar = document.getElementById('globalErrorBar');
+        const txt = document.getElementById('globalErrorText');
+        if (!bar || !txt) return;
+        const cleanMsg = String(msg || '알 수 없는 오류').replace(/\s+/g, ' ').trim();
+        txt.textContent = `오류가 발생했습니다: ${cleanMsg}`;
+        bar.classList.remove('hidden');
+      }
+
+      console.error = function (...args) {
+        origConsoleError(...args);
+        const firstMsg = args.map(a => (a instanceof Error ? a.message : (typeof a === 'string' ? a : ''))).filter(Boolean)[0] || '콘솔 오류가 기록되었습니다.';
+        showGlobalErrorBanner(firstMsg);
+      };
+
+      window.addEventListener('error', (event) => {
+        if (event && event.message) {
+          showGlobalErrorBanner(event.message);
+        }
+      });
+
+      window.addEventListener('unhandledrejection', (event) => {
+        const reason = event?.reason;
+        const msg = reason instanceof Error ? reason.message : String(reason || '비동기 작업 오류');
+        showGlobalErrorBanner(msg);
+      });
+
+      window.addEventListener('DOMContentLoaded', () => {
+        const closeBtn = document.getElementById('btnCloseGlobalError');
+        if (closeBtn) {
+          closeBtn.addEventListener('click', () => {
+            document.getElementById('globalErrorBar')?.classList.add('hidden');
+          });
+        }
+      });
+    })();
+
+    /* ==========================================================================
+       1. 기본 내장 샘플 덱 2종 (비즈니스/AI 실무 영단어 15개 + 일본어 필수 15개)
+       ========================================================================== */
+    const DEFAULT_DECKS = [
+      {
+        id: 'builtin-biz-ai',
+        title: '① 비즈니스·AI 실무 영단어 (15)',
+        lang: 'en-US',
+        cards: [
+          { id: 'en1', word: 'Orchestrate', reading: '/ˈɔːr.kɪ.streɪt/', pos: '동사', meaning: '정교하게 조율하다, 통합 관리하다', exSrc: 'We use an agent framework to orchestrate multiple LLM workflows.', exKo: '우리는 여러 LLM 워크플로우를 정교하게 조율하기 위해 에이전트 프레임워크를 사용합니다.', memo: 'AI 에이전트·클라우드 아키텍처에서 빈출' },
+          { id: 'en2', word: 'Bottleneck', reading: '/ˈbɑː.t̬əl.nek/', pos: '명사', meaning: '병목 현상, 전체 속도를 늦추는 구간', exSrc: 'Data preprocessing turned out to be the main bottleneck in our pipeline.', exKo: '데이터 전처리가 우리 파이프라인의 주요 병목 구간으로 드러났습니다.', memo: '성능 최적화 회의 필수 어휘' },
+          { id: 'en3', word: 'Trade-off', reading: '/ˈtreɪd.ɑːf/', pos: '명사', meaning: '상충 관계, 하나를 얻기 위해 다른 것을 포기함', exSrc: 'There is always a trade-off between model accuracy and inference latency.', exKo: '모델 정확도와 추론 지연 시간 사이에는 항상 상충 관계가 존재합니다.', memo: '의사결정 보고서 핵심 표현' },
+          { id: 'en4', word: 'Latency', reading: '/ˈleɪ.tən.si/', pos: '명사', meaning: '지연 시간, 응답 대기 시간', exSrc: 'Reducing API latency below 200ms dramatically improved user retention.', exKo: 'API 응답 지연 시간을 200ms 이하로 줄이자 사용자 유지율이 크게 향상되었습니다.', memo: '실시간 서비스 품질 지표' },
+          { id: 'en5', word: 'Scalable', reading: '/ˈskeɪ.lə.bəl/', pos: '형용사', meaning: '확장 가능한, 규모가 커져도 감당할 수 있는', exSrc: 'Investors are looking for a scalable business model with low marginal cost.', exKo: '투자자들은 한계 비용이 낮고 확장 가능한 비즈니스 모델을 찾고 있습니다.', memo: '스타트업·시스템 설계 단골 형용사' },
+          { id: 'en6', word: 'Iterate', reading: '/ˈɪt.ə.reɪt/', pos: '동사', meaning: '반복하여 개선하다, 프로토타입을 거듭 발전시키다', exSrc: 'Ship the MVP quickly and iterate based on real user feedback.', exKo: 'MVP를 빠르게 출시하고 실제 사용자 피드백을 바탕으로 반복 개선하세요.', memo: '애자일/프로덕트 개발 핵심 동사' },
+          { id: 'en7', word: 'Hallucination', reading: '/həˌluː.səˈneɪ.ʃən/', pos: '명사', meaning: '(AI의) 환각 현상, 사실이 아닌 정보를 생성함', exSrc: 'Grounding responses with retrieval helps minimize LLM hallucination.', exKo: '검색 기반 근거를 연결하면 LLM의 환각 현상을 최소화하는 데 도움이 됩니다.', memo: 'RAG(검색증강생성) 맥락에서 자주 쓰임' },
+          { id: 'en8', word: 'Align', reading: '/əˈlaɪn/', pos: '동사', meaning: '방향을 맞추다, 합의·정렬하다', exSrc: 'Let’s have a quick sync to align on Q3 product priorities.', exKo: '3분기 제품 우선순위에 대해 방향을 맞추기 위해 짧게 회의를 합시다.', memo: '팀 간 목표 일치를 뜻할 때 자주 사용' },
+          { id: 'en9', word: 'Mitigate', reading: '/ˈmɪt.ɪ.ɡeɪt/', pos: '동사', meaning: '완화하다, 리스크를 줄이다', exSrc: 'We implemented strict guardrails to mitigate security vulnerabilities.', exKo: '보안 취약점을 완화하기 위해 엄격한 가드레일을 도입했습니다.', memo: '리스크 관리(Risk mitigation)' },
+          { id: 'en10', word: 'Leverage', reading: '/ˈlev.ɚ.ɪdʒ/', pos: '동사', meaning: '최대한 활용하다, 지렛대로 삼다', exSrc: 'Small teams can leverage generative AI to compete with larger enterprises.', exKo: '소규모 팀도 생성형 AI를 활용해 대기업과 경쟁할 수 있습니다.', memo: '비즈니스에서 use보다 전략적인 뉘앙스' },
+          { id: 'en11', word: 'Benchmark', reading: '/ˈbentʃ.mɑːrk/', pos: '명사/동사', meaning: '기준점, 성능 평가 지표', exSrc: 'Our fine-tuned model outperformed the industry benchmark by 12%.', exKo: '우리의 파인튜닝 모델이 업계 성능 기준치를 12% 상회했습니다.', memo: '모델 평가·경쟁사 비교 필수어' },
+          { id: 'en12', word: 'Granular', reading: '/ˈɡræn.jə.lɚ/', pos: '형용사', meaning: '세분화된, 아주 촘촘한 단위의', exSrc: 'The dashboard provides granular insights into daily cohort behavior.', exKo: '이 대시보드는 일일 코호트 행동에 대한 세분화된 인사이트를 제공합니다.', memo: '데이터 분석·권한 설정에서 빈출' },
+          { id: 'en13', word: 'Feasibility', reading: '/ˌfiː.zəˈbɪl.ə.ti/', pos: '명사', meaning: '실현 가능성, 타당성', exSrc: 'We are conducting a two-week technical feasibility study.', exKo: '우리는 2주간 기술적 실현 가능성 검토를 진행하고 있습니다.', memo: 'PoC(개념검증) 전 단계에서 활용' },
+          { id: 'en14', word: 'Deprecate', reading: '/ˈdep.rə.keɪt/', pos: '동사', meaning: '(구버전 기능의) 사용을 중단 예고하다', exSrc: 'Legacy authentication endpoints will be deprecated next month.', exKo: '구형 인증 엔드포인트는 다음 달부터 지원이 중단될 예정입니다.', memo: '개발 문서·릴리스 노트 핵심 어휘' },
+          { id: 'en15', word: 'Traction', reading: '/ˈtræk.ʃən/', pos: '명사', meaning: '시장 견인력, 초기 성과 및 성장 탄력', exSrc: 'The product gained strong early traction among freelance designers.', exKo: '그 제품은 프리랜서 디자이너들 사이에서 초기 시장 견인력을 강하게 얻었습니다.', memo: 'IR 피칭 및 그로스 마케팅 용어' }
+        ]
+      },
+      {
+        id: 'builtin-jp-core',
+        title: '② 일본어 필수 어휘·한자 (15)',
+        lang: 'ja-JP',
+        cards: [
+          { id: 'jp1', word: '一期一会', reading: 'いちごいちえ', pos: '사자성어', meaning: '일기일회 (평생 단 한 번뿐인 소중한 만남)', exSrc: '旅先での出会いはまさに一期一会だ。', exKo: '여행지에서의 만남은 그야말로 평생 한 번뿐인 인연이다.', memo: '다도(茶道)에서 유래한 일본 대표 사자성어' },
+          { id: 'jp2', word: '把握する', reading: 'はあくする', pos: '동사', meaning: '파악하다, 내용을 정확히 이해하다', exSrc: '現在の状況を正確に把握する必要があります。', exKo: '현재 상황을 정확하게 파악할 필요가 있습니다.', memo: '비즈니스·뉴스에서 매우 자주 쓰임' },
+          { id: 'jp3', word: '検討する', reading: 'けんとうする', pos: '동사', meaning: '검토하다, 신중히 따져보다', exSrc: 'ご提案いただいた件については社内で検討いたします。', exKo: '제안해 주신 건에 대해서는 사내에서 검토하겠습니다.', memo: '일본 비즈니스 완곡 표현의 대표격' },
+          { id: 'jp4', word: '臨機応変', reading: 'りんきおうへん', pos: '명사/형용동사', meaning: '임기응변, 상황에 따라 알맞게 대처함', exSrc: '現場では臨機応変な対応が求められる。', exKo: '현장에서는 임기응변식의 대처가 요구된다.', memo: '면접·업무 평가에서 자주 등장' },
+          { id: 'jp5', word: '見直す', reading: 'みなおす', pos: '동사', meaning: '재검토하다, 다시 고쳐 보다 / 다시 평가하다', exSrc: 'コスト削減のために契約内容を見直した。', exKo: '비용 절감을 위해 계약 내용을 재검토했다.', memo: '複合動詞(~直す: 다시 ~하다)' },
+          { id: 'jp6', word: '相変わらず', reading: 'あいかわらず', pos: '부사', meaning: '여전히, 변함없이', exSrc: 'お久しぶりですね。相変わらずお元気そうで何よりです。', exKo: '오랜만이네요. 여전히 건강해 보이셔서 다행입니다.', memo: '안부 인사 첫마디 단골 표현' },
+          { id: 'jp7', word: '手配する', reading: 'てはいする', pos: '동사', meaning: '수배하다, (일정·차량·물품 등을) 미리 준비·배치하다', exSrc: '出張用の新幹線チケットを手配しておきました。', exKo: '출장용 신칸센 티켓을 미리 예매해 두었습니다.', memo: '범죄 수배뿐 아니라 업무 예약·준비 뜻으로 일상 사용' },
+          { id: 'jp8', word: '本質', reading: 'ほんしつ', pos: '명사', meaning: '본질, 사물의 근본적인 성질', exSrc: '表面的な現象ではなく、問題の本質を見極めよう。', exKo: '표면적인 현상이 아니라 문제의 본질을 간파하자.', memo: '見極める(간파하다)와 짝으로 자주 쓰임' },
+          { id: 'jp9', word: '控えめ', reading: 'ひかえめ', pos: '형용동사', meaning: '절제됨, 삼감, 과하지 않음', exSrc: '塩分を控えめにした和食を作りました。', exKo: '염분을 줄인(절제한) 일식을 만들었습니다.', memo: '성격이 겸손하거나 맛·장식이 과하지 않을 때 사용' },
+          { id: 'jp10', word: '納得する', reading: 'なっとくする', pos: '동사', meaning: '납득하다, 마음속으로 충분히 이해하고 수긍하다', exSrc: '丁寧な説明を聞いて、ようやく納得できた。', exKo: '정중한 설명을 듣고서야 비로소 납득할 수 있었다.', memo: '일상 회화 및 회의 필수 동사' },
+          { id: 'jp11', word: '迅速', reading: 'じんそく', pos: '형용동사', meaning: '신속함, 매우 빠름', exSrc: 'トラブル発生時の迅速な対応に感謝します。', exKo: '문제 발생 시의 신속한 대응에 감사드립니다.', memo: '안내문·공식 메일 빈출 한자어' },
+          { id: 'jp12', word: 'きっかけ', reading: 'きっかけ', pos: '명사', meaning: '계기, 시작하게 된 동기', exSrc: '日本文学を読んだのが日本語を学ぶきっかけでした。', exKo: '일본 문학을 읽은 것이 일본어를 배우게 된 계기였습니다.', memo: '히라가나 표기가 일반적' },
+          { id: 'jp13', word: '余白', reading: 'よはく', pos: '명사', meaning: '여백, 빈 공간 또는 마음의 여유', exSrc: 'デザインの美しさは余白の使い方で決まる。', exKo: '디자인의 아름다움은 여백의 쓰임새로 결정된다.', memo: '미학·기획·편집 용어' },
+          { id: 'jp14', word: '工夫する', reading: 'くふうする', pos: '동사', meaning: '궁리하다, 더 나은 방법을 고안해 내다', exSrc: '狭い部屋でも快適に過ごせるよう工夫している。', exKo: '좁은 방에서도 쾌적하게 지낼 수 있도록 궁리하고 있다.', memo: '한국어 "공부하다"와 한자는 같으나 뜻이 다름 주의' },
+          { id: 'jp15', word: '折り返し', reading: 'おりかえし', pos: '명사/부사', meaning: '되돌아옴, 곧바로 회신함', exSrc: '担当者から折り返しご連絡いたします。', exKo: '담당자가 확인 후 곧바로 다시 연락드리겠습니다.', memo: '전화 응대 필수 표현' }
+        ]
+      }
+    ];
+
+    /* ==========================================================================
+       2. 전역 상태 & 로컬 스토리지 안전한 초기화
+       ========================================================================== */
+    const STORAGE_KEYS = {
+      DECKS: 'nulleo_decks_v1',
+      PROGRESS: 'nulleo_progress_v1',
+      SETTINGS: 'nulleo_settings_v1'
+    };
+
+    const defaultSettings = {
+      theme: 'light',
+      remotePreset: 'standard', // 'standard' | 'onebutton' | 'custom'
+      customBindings: {
+        next: 'ArrowRight',
+        prev: 'ArrowLeft',
+        flip: 'Enter',
+        tts: 'ArrowDown'
+      },
+      soundStyle: 'moktak', // 'moktak' | 'blue' | 'off'
+      haptic: true,
+      autoTts: false,
+      activeDeckId: 'builtin-biz-ai',
+      geminiApiKey: ''
+    };
+
+    function safeLoadJSON(key, fallback) {
+      try {
+        const raw = localStorage.getItem(key);
+        if (!raw) return fallback;
+        const parsed = JSON.parse(raw);
+        return parsed ?? fallback;
+      } catch (e) {
+        console.warn('Storage parse fallback:', key, e);
+        return fallback;
+      }
+    }
+
+    function safeSaveJSON(key, value) {
+      try {
+        localStorage.setItem(key, JSON.stringify(value));
+      } catch (e) {
+        console.warn('Storage save error:', key, e);
+      }
+    }
+
+    let decks = safeLoadJSON(STORAGE_KEYS.DECKS, null);
+    if (!Array.isArray(decks) || decks.length === 0) {
+      decks = JSON.parse(JSON.stringify(DEFAULT_DECKS));
+      safeSaveJSON(STORAGE_KEYS.DECKS, decks);
+    }
+
+    // progress 구조: { [cardId]: 'memorized' | 'review' }
+    let progressMap = safeLoadJSON(STORAGE_KEYS.PROGRESS, {});
+    let settings = Object.assign({}, defaultSettings, safeLoadJSON(STORAGE_KEYS.SETTINGS, {}));
+    if (!settings.customBindings) {
+      settings.customBindings = { ...defaultSettings.customBindings };
+    }
+
+    // 현재 학습 세션 런타임 상태
+    let sessionState = {
+      studyMode: 'sequential', // 'sequential' | 'shuffle' | 'review' | 'quiz'
+      filteredCards: [],
+      currentIndex: 0,
+      isFlipped: false,
+      quizAnswered: false,
+      listeningAction: null // 커스텀 키 바인딩 대기 중인 액션
+    };
+
+    /* ==========================================================================
+       3. Web Audio API 합성 타건음 & 햅틱 엔진
+       ========================================================================== */
+    let audioCtx = null;
+
+    function playTactileFeedback(type = 'step') {
+      // 모바일 진동
+      if (settings.haptic && typeof navigator !== 'undefined' && navigator.vibrate) {
+        try {
+          navigator.vibrate(type === 'flip' ? 14 : 10);
+        } catch (_) {}
+      }
+
+      if (settings.soundStyle === 'off') return;
+
+      try {
+        if (!audioCtx) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return;
+          audioCtx = new AudioContextClass();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+
+        if (settings.soundStyle === 'moktak') {
+          // 저음 목탁: 따뜻하고 절제된 나무 울림
+          osc.type = 'triangle';
+          const baseFreq = type === 'flip' ? 210 : (type === 'prev' ? 165 : 185);
+          osc.frequency.setValueAtTime(baseFreq, now);
+          osc.frequency.exponentialRampToValueAtTime(68, now + 0.055);
+
+          gain.gain.setValueAtTime(0.22, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.065);
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.07);
+        } else if (settings.soundStyle === 'blue') {
+          // 청축 키캡: 경쾌한 고주파 클릭
+          osc.type = 'square';
+          const baseFreq = type === 'flip' ? 1350 : 1050;
+          osc.frequency.setValueAtTime(baseFreq, now);
+          osc.frequency.exponentialRampToValueAtTime(320, now + 0.025);
+
+          gain.gain.setValueAtTime(0.11, now);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
+
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start(now);
+          osc.stop(now + 0.032);
+        }
+      } catch (e) {
+        // 오디오 정책 제한 시 조용히 무시
+      }
+    }
+
+    /* ==========================================================================
+       4. Web Speech API (TTS) 발음 읽기
+       ========================================================================== */
+    function detectLanguage(text, fallbackLang = 'en-US') {
+      if (!text) return fallbackLang;
+      if (/[\u3040-\u30ff\u31f0-\u31ff]/.test(text)) return 'ja-JP';
+      if (/[\uac00-\ud7af]/.test(text)) return 'ko-KR';
+      if (/[\u4e00-\u9faf]/.test(text) && fallbackLang === 'ja-JP') return 'ja-JP';
+      if (/[a-zA-Z]/.test(text)) return 'en-US';
+      return fallbackLang;
+    }
+
+    function speakText(text, deckLang) {
+      if (!('speechSynthesis' in window) || !text) return;
+      try {
+        window.speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(text);
+        utter.lang = detectLanguage(text, deckLang || 'en-US');
+        utter.rate = 0.96;
+        window.speechSynthesis.speak(utter);
+      } catch (e) {
+        console.warn('TTS error:', e);
+      }
+    }
+
+    /* ==========================================================================
+       5. 덱 및 카드 렌더링 로직
+       ========================================================================== */
+    const dom = {
+      deckSelect: document.getElementById('deckSelect'),
+      deckLangBadge: document.getElementById('deckLangBadge'),
+      progressFill: document.getElementById('progressFill'),
+      flashcard: document.getElementById('flashcard'),
+      cardCounter: document.getElementById('cardCounter'),
+      cardStatusBadge: document.getElementById('cardStatusBadge'),
+      cardBodyView: document.getElementById('cardBodyView'),
+      quizBodyView: document.getElementById('quizBodyView'),
+      cardPos: document.getElementById('cardPos'),
+      cardWord: document.getElementById('cardWord'),
+      cardReading: document.getElementById('cardReading'),
+      cardBackArea: document.getElementById('cardBackArea'),
+      cardMeaning: document.getElementById('cardMeaning'),
+      cardExampleBox: document.getElementById('cardExampleBox'),
+      cardExSrc: document.getElementById('cardExSrc'),
+      cardExKo: document.getElementById('cardExKo'),
+      cardMemo: document.getElementById('cardMemo'),
+      quizWord: document.getElementById('quizWord'),
+      quizReading: document.getElementById('quizReading'),
+      quizOptions: document.getElementById('quizOptions'),
+      remoteModeStatus: document.getElementById('remoteModeStatus'),
+      cardHintText: document.getElementById('cardHintText'),
+      btnFlipLabel: document.getElementById('btnFlipLabel'),
+      btnMarkReview: document.getElementById('btnMarkReview'),
+      btnMarkMemorized: document.getElementById('btnMarkMemorized'),
+      soundLabel: document.getElementById('soundLabel'),
+      btnAutoTts: document.getElementById('btnAutoTts'),
+      toastMsg: document.getElementById('toastMsg')
+    };
+
+    let toastTimer = null;
+    function showToast(msg) {
+      dom.toastMsg.textContent = msg;
+      dom.toastMsg.classList.add('show');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        dom.toastMsg.classList.remove('show');
+      }, 2100);
+    }
+
+    function getActiveDeck() {
+      let deck = decks.find(d => d.id === settings.activeDeckId);
+      if (!deck) {
+        deck = decks[0];
+        settings.activeDeckId = deck.id;
+        safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+      }
+      return deck;
+    }
+
+    function populateDeckSelect() {
+      dom.deckSelect.innerHTML = '';
+      decks.forEach(deck => {
+        const opt = document.createElement('option');
+        opt.value = deck.id;
+        opt.textContent = `${deck.title} (${deck.cards.length}단어)`;
+        if (deck.id === settings.activeDeckId) opt.selected = true;
+        dom.deckSelect.appendChild(opt);
+      });
+    }
+
+    function rebuildSessionCards(resetIndex = true) {
+      const deck = getActiveDeck();
+      let list = [...deck.cards];
+
+      if (sessionState.studyMode === 'review') {
+        const reviewOnly = list.filter(c => progressMap[c.id] === 'review');
+        if (reviewOnly.length === 0) {
+          showToast('★ 다시 보기 표시된 카드가 없어 전체 카드를 보여줍니다.');
+          sessionState.studyMode = 'sequential';
+          updateStudyModeTabs();
+        } else {
+          list = reviewOnly;
+        }
+      }
+
+      if (sessionState.studyMode === 'shuffle') {
+        for (let i = list.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [list[i], list[j]] = [list[j], list[i]];
+        }
+      }
+
+      sessionState.filteredCards = list;
+      if (resetIndex) {
+        sessionState.currentIndex = 0;
+      } else if (sessionState.currentIndex >= list.length) {
+        sessionState.currentIndex = Math.max(0, list.length - 1);
+      }
+      sessionState.isFlipped = false;
+      sessionState.quizAnswered = false;
+      renderCard();
+    }
+
+    function updateStudyModeTabs() {
+      document.querySelectorAll('.pill-tab').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.studyMode === sessionState.studyMode);
+      });
+    }
+
+    function renderCard(animDirection = null) {
+      const deck = getActiveDeck();
+      const total = sessionState.filteredCards.length;
+
+      const langNames = { 'en-US': '영어 학습', 'ja-JP': '일본어 학습', 'ko-KR': '한국어/기타' };
+      dom.deckLangBadge.textContent = `${langNames[deck.lang] || '단어 학습'} · ${deck.cards.length}단어`;
+
+      if (total === 0) {
+        dom.cardCounter.textContent = '0 / 0';
+        dom.cardWord.textContent = '카드가 없습니다';
+        dom.cardReading.textContent = '설정에서 단어를 추가해 주세요';
+        dom.cardBackArea.classList.add('hidden');
+        return;
+      }
+
+      const card = sessionState.filteredCards[sessionState.currentIndex];
+      const idx = sessionState.currentIndex + 1;
+
+      dom.cardCounter.textContent = `${idx} / ${total}`;
+      dom.progressFill.style.width = `${(idx / total) * 100}%`;
+
+      // 상태 배지 및 하단 마킹 버튼 반영
+      const status = progressMap[card.id] || 'unseen';
+      dom.cardStatusBadge.className = 'status-chip';
+      dom.btnMarkReview.classList.remove('active-rev');
+      dom.btnMarkMemorized.classList.remove('active-mem');
+
+      if (status === 'memorized') {
+        dom.cardStatusBadge.textContent = '✓ 외움';
+        dom.cardStatusBadge.classList.add('memorized');
+        dom.btnMarkMemorized.classList.add('active-mem');
+      } else if (status === 'review') {
+        dom.cardStatusBadge.textContent = '★ 다시 보기';
+        dom.cardStatusBadge.classList.add('review');
+        dom.btnMarkReview.classList.add('active-rev');
+      } else {
+        dom.cardStatusBadge.textContent = '학습 중';
+      }
+
+      // 애니메이션 효과
+      if (animDirection === 'next') {
+        dom.flashcard.classList.remove('slide-next', 'slide-prev');
+        void dom.flashcard.offsetWidth;
+        dom.flashcard.classList.add('slide-next');
+      } else if (animDirection === 'prev') {
+        dom.flashcard.classList.remove('slide-next', 'slide-prev');
+        void dom.flashcard.offsetWidth;
+        dom.flashcard.classList.add('slide-prev');
+      }
+
+      // 퀴즈 모드 분기
+      if (sessionState.studyMode === 'quiz') {
+        dom.cardBodyView.classList.add('hidden');
+        dom.quizBodyView.classList.remove('hidden');
+        renderQuizView(card, deck);
+        dom.btnFlipLabel.textContent = '다음 문제';
+        dom.cardHintText.textContent = '정답을 선택하거나 → 키로 이동';
+        return;
+      }
+
+      dom.quizBodyView.classList.add('hidden');
+      dom.cardBodyView.classList.remove('hidden');
+
+      if (card.pos) {
+        dom.cardPos.textContent = card.pos;
+        dom.cardPos.classList.remove('hidden');
+      } else {
+        dom.cardPos.classList.add('hidden');
+      }
+
+      dom.cardWord.textContent = card.word;
+      dom.cardReading.textContent = card.reading || '';
+
+      if (sessionState.isFlipped) {
+        dom.cardBackArea.classList.remove('hidden');
+        dom.cardMeaning.textContent = card.meaning;
+
+        if (card.exSrc || card.exKo) {
+          dom.cardExampleBox.classList.remove('hidden');
+          dom.cardExSrc.textContent = card.exSrc || '';
+          dom.cardExKo.textContent = card.exKo || '';
+        } else {
+          dom.cardExampleBox.classList.add('hidden');
+        }
+
+        if (card.memo) {
+          dom.cardMemo.textContent = `메모 · ${card.memo}`;
+          dom.cardMemo.classList.remove('hidden');
+        } else {
+          dom.cardMemo.classList.add('hidden');
+        }
+
+        dom.btnFlipLabel.textContent = '앞면 보기';
+        dom.cardHintText.textContent = '→ 또는 Space로 다음 카드';
+      } else {
+        dom.cardBackArea.classList.add('hidden');
+        dom.btnFlipLabel.textContent = '뜻 뒤집기';
+        dom.cardHintText.textContent = '클릭 또는 Space로 뜻 확인';
+      }
+    }
+
+    function renderQuizView(targetCard, deck) {
+      dom.quizWord.textContent = targetCard.word;
+      dom.quizReading.textContent = targetCard.reading || '';
+      dom.quizOptions.innerHTML = '';
+      sessionState.quizAnswered = false;
+
+      // 오답 후보 3개 추출
+      const pool = deck.cards.filter(c => c.id !== targetCard.id);
+      for (let i = pool.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [pool[i], pool[j]] = [pool[j], pool[i]];
+      }
+      const distractors = pool.slice(0, 3);
+      const choices = [targetCard, ...distractors];
+      for (let i = choices.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [choices[i], choices[j]] = [choices[j], choices[i]];
+      }
+
+      choices.forEach((choice, i) => {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'quiz-opt-btn';
+        btn.innerHTML = `<span class="quiz-num">${i + 1}</span><span>${escapeHtml(choice.meaning)}</span>`;
+        btn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          if (sessionState.quizAnswered) return;
+          sessionState.quizAnswered = true;
+          const isCorrect = choice.id === targetCard.id;
+          if (isCorrect) {
+            btn.classList.add('correct');
+            playTactileFeedback('flip');
+            showToast('정답입니다!');
+          } else {
+            btn.classList.add('wrong');
+            playTactileFeedback('prev');
+            // 정답 강조 및 자동 '다시 보기' 마킹
+            Array.from(dom.quizOptions.children).forEach((el, idx) => {
+              if (choices[idx].id === targetCard.id) el.classList.add('correct');
+            });
+            progressMap[targetCard.id] = 'review';
+            safeSaveJSON(STORAGE_KEYS.PROGRESS, progressMap);
+            showToast('오답 — "다시 보기(★)"에 자동 등록되었습니다.');
+          }
+        });
+        dom.quizOptions.appendChild(btn);
+      });
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+
+    /* ==========================================================================
+       6. 카드 제어 액션 (다음 / 이전 / 뒤집기 / 원버튼 순환 / 마킹)
+       ========================================================================== */
+    function triggerCardFlip() {
+      if (sessionState.studyMode === 'quiz') {
+        goNextCard();
+        return;
+      }
+      playTactileFeedback('flip');
+      dom.flashcard.classList.add('bump-flip');
+      setTimeout(() => dom.flashcard.classList.remove('bump-flip'), 140);
+
+      sessionState.isFlipped = !sessionState.isFlipped;
+      renderCard();
+    }
+
+    function goNextCard() {
+      const total = sessionState.filteredCards.length;
+      if (total === 0) return;
+
+      playTactileFeedback('step');
+      sessionState.currentIndex = (sessionState.currentIndex + 1) % total;
+      sessionState.isFlipped = false;
+      renderCard('next');
+
+      if (settings.autoTts) {
+        const deck = getActiveDeck();
+        const card = sessionState.filteredCards[sessionState.currentIndex];
+        speakText(card.word, deck.lang);
+      }
+    }
+
+    function goPrevCard() {
+      const total = sessionState.filteredCards.length;
+      if (total === 0) return;
+
+      playTactileFeedback('prev');
+      sessionState.currentIndex = (sessionState.currentIndex - 1 + total) % total;
+      sessionState.isFlipped = false;
+      renderCard('prev');
+
+      if (settings.autoTts) {
+        const deck = getActiveDeck();
+        const card = sessionState.filteredCards[sessionState.currentIndex];
+        speakText(card.word, deck.lang);
+      }
+    }
+
+    // 스마트 진행: 앞면이면 뒤집고, 뒷면이면 다음 카드로
+    function smartAdvance() {
+      if (sessionState.studyMode === 'quiz') {
+        goNextCard();
+        return;
+      }
+      if (!sessionState.isFlipped) {
+        triggerCardFlip();
+      } else {
+        goNextCard();
+      }
+    }
+
+    function toggleCardStatus(targetStatus) {
+      const card = sessionState.filteredCards[sessionState.currentIndex];
+      if (!card) return;
+      playTactileFeedback('flip');
+
+      if (progressMap[card.id] === targetStatus) {
+        delete progressMap[card.id];
+      } else {
+        progressMap[card.id] = targetStatus;
+      }
+      safeSaveJSON(STORAGE_KEYS.PROGRESS, progressMap);
+      renderCard();
+    }
+
+    /* ==========================================================================
+       7. 전역 키보드 & 블루투스 클리커 이벤트 핸들러
+       ========================================================================== */
+    function isTypingTarget(el) {
+      if (!el) return false;
+      const tag = el.tagName;
+      return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || el.isContentEditable;
+    }
+
+    window.addEventListener('keydown', (e) => {
+      // 1) 커스텀 키 바인딩 감지 모드인 경우 우선 처리
+      if (sessionState.listeningAction) {
+        e.preventDefault();
+        const keyName = e.key === ' ' ? 'Space' : e.key;
+        settings.customBindings[sessionState.listeningAction] = keyName;
+        safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+        sessionState.listeningAction = null;
+        updateSettingsUI();
+        showToast(`키 매핑 완료: ${keyName}`);
+        return;
+      }
+
+      // 설정 모달 안의 키 테스트 모니터 업데이트
+      const monitor = document.getElementById('keyTestMonitor');
+      if (monitor) {
+        const displayKey = e.key === ' ' ? 'Space' : e.key;
+        monitor.textContent = `감지됨 → key: "${displayKey}" | code: "${e.code}"`;
+      }
+
+      // 2) 입력창 포커스 중에는 단축키 비활성화
+      if (isTypingTarget(document.activeElement)) return;
+
+      // 모달이 열려 있을 때는 ESC만 닫기 처리
+      if (document.getElementById('modalBackdrop').classList.contains('open')) {
+        if (e.key === 'Escape') closeModal();
+        return;
+      }
+
+      const key = e.key === ' ' ? 'Space' : e.key;
+      const preset = settings.remotePreset;
+
+      // 퀴즈 모드일 때 숫자키 1~4 지원
+      if (sessionState.studyMode === 'quiz' && ['1', '2', '3', '4'].includes(key)) {
+        const idx = parseInt(key, 10) - 1;
+        const optBtn = dom.quizOptions.children[idx];
+        if (optBtn) optBtn.click();
+        return;
+      }
+
+      // 프리셋 3: 커스텀 키 바인딩
+      if (preset === 'custom') {
+        const b = settings.customBindings;
+        if (key === b.next || e.code === b.next) {
+          e.preventDefault();
+          smartAdvance();
+        } else if (key === b.prev || e.code === b.prev) {
+          e.preventDefault();
+          goPrevCard();
+        } else if (key === b.flip || e.code === b.flip) {
+          e.preventDefault();
+          triggerCardFlip();
+        } else if (key === b.tts || e.code === b.tts) {
+          e.preventDefault();
+          const deck = getActiveDeck();
+          const card = sessionState.filteredCards[sessionState.currentIndex];
+          if (card) speakText(card.word, deck.lang);
+        }
+        return;
+      }
+
+      // 프리셋 2: 원버튼 순환 모드 (클리커 1버튼용)
+      if (preset === 'onebutton') {
+        if (['ArrowRight', 'PageDown', 'Space', 'Enter'].includes(key)) {
+          e.preventDefault();
+          smartAdvance();
+        } else if (['ArrowLeft', 'PageUp'].includes(key)) {
+          e.preventDefault();
+          goPrevCard();
+        } else if (key === 'ArrowDown') {
+          e.preventDefault();
+          const deck = getActiveDeck();
+          const card = sessionState.filteredCards[sessionState.currentIndex];
+          if (card) speakText(card.word, deck.lang);
+        }
+        return;
+      }
+
+      // 프리셋 1: 기본/방향키 모드
+      if (['ArrowRight', 'PageDown', 'Space'].includes(key)) {
+        e.preventDefault();
+        smartAdvance();
+      } else if (['ArrowLeft', 'PageUp'].includes(key)) {
+        e.preventDefault();
+        goPrevCard();
+      } else if (['Enter', 'ArrowUp'].includes(key)) {
+        e.preventDefault();
+        triggerCardFlip();
+      } else if (key === 'ArrowDown') {
+        e.preventDefault();
+        const deck = getActiveDeck();
+        const card = sessionState.filteredCards[sessionState.currentIndex];
+        if (card) speakText(card.word, deck.lang);
+      }
+    });
+
+    /* ==========================================================================
+       8. 데이터 가져오기 / 내보내기 / CSV·TSV 파서 / URL 동기화 / AI 프롬프트
+       ========================================================================== */
+    const AI_PROMPT_TEMPLATE = `다음 주제에 맞는 스마트 단어장 JSON 데이터를 생성해 주세요.
+코드 블록(\`\`\`json) 안에 순수 JSON만 출력해 주세요.
+
+[주제]: (여기에 원하는 주제를 입력하세요. 예: IT 스타트업 비즈니스 영어 20선 / 일본 여행 필수 회화 20선)
+
+[JSON 형식 규칙]:
+{
+  "title": "단어장 제목",
+  "lang": "en-US",
+  "cards": [
+    {
+      "word": "단어 또는 표기",
+      "reading": "발음기호 또는 후리가나",
+      "pos": "품사",
+      "meaning": "한국어 뜻",
+      "exSrc": "원문 예문",
+      "exKo": "예문 한국어 해석",
+      "memo": "암기 팁이나 실무 뉘앙스 메모"
+    }
+  ]
+}
+※ lang 값은 영어면 "en-US", 일본어면 "ja-JP", 한국어면 "ko-KR"로 지정해 주세요.`;
+
+    // 따옴표("...") 내부의 쉼표/줄바꿈을 안전하게 처리하는 RFC-4180 호환 CSV/TSV 파서
+    function parseDelimitedText(text, delimiter) {
+      const rows = [];
+      let row = [];
+      let cur = '';
+      let inQuotes = false;
+
+      for (let i = 0; i < text.length; i++) {
+        const ch = text[i];
+        const next = text[i + 1];
+
+        if (inQuotes) {
+          if (ch === '"' && next === '"') {
+            cur += '"';
+            i++;
+          } else if (ch === '"') {
+            inQuotes = false;
+          } else {
+            cur += ch;
+          }
+        } else {
+          if (ch === '"') {
+            inQuotes = true;
+          } else if (ch === delimiter) {
+            row.push(cur.trim());
+            cur = '';
+          } else if (ch === '\r' && next === '\n') {
+            row.push(cur.trim());
+            rows.push(row);
+            row = [];
+            cur = '';
+            i++;
+          } else if (ch === '\n' || ch === '\r') {
+            row.push(cur.trim());
+            rows.push(row);
+            row = [];
+            cur = '';
+          } else {
+            cur += ch;
+          }
+        }
+      }
+      if (cur.length > 0 || row.length > 0) {
+        row.push(cur.trim());
+        rows.push(row);
+      }
+      return rows.filter(r => r.some(cell => cell !== ''));
+    }
+
+    function normalizeImportedDeck(rawData, customTitle) {
+      let title = customTitle || '가져온 단어장';
+      let lang = 'en-US';
+      let rawCards = [];
+
+      if (Array.isArray(rawData)) {
+        rawCards = rawData;
+      } else if (rawData && typeof rawData === 'object') {
+        if (rawData.title && !customTitle) title = rawData.title;
+        if (rawData.lang) lang = rawData.lang;
+        if (Array.isArray(rawData.cards)) rawCards = rawData.cards;
+      }
+
+      const cards = rawCards
+        .filter(item => item && (item.word || item.front))
+        .map((item, idx) => ({
+          id: `imp-${Date.now()}-${idx}-${Math.random().toString(36).slice(2, 6)}`,
+          word: String(item.word || item.front || '').trim(),
+          reading: String(item.reading || item.phonetic || item.furigana || '').trim(),
+          pos: String(item.pos || '').trim(),
+          meaning: String(item.meaning || item.back || '').trim(),
+          exSrc: String(item.exSrc || item.example || '').trim(),
+          exKo: String(item.exKo || item.exampleKo || '').trim(),
+          memo: String(item.memo || '').trim()
+        }));
+
+      if (cards.length === 0) {
+        throw new Error('유효한 단어 항목을 찾을 수 없습니다.');
+      }
+
+      if (!rawData?.lang) {
+        lang = detectLanguage(cards[0].word, 'en-US');
+      }
+
+      return {
+        id: `deck-${Date.now()}`,
+        title,
+        lang,
+        cards
+      };
+    }
+
+    function parseAnyTextToDeck(rawText, customTitle) {
+      const trimmed = rawText.trim();
+      if (!trimmed) throw new Error('내용이 비어 있습니다.');
+
+      // 1) JSON 시도 (마크다운 코드펜스 제거 포함)
+      const cleanedJson = trimmed.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+      if (cleanedJson.startsWith('{') || cleanedJson.startsWith('[')) {
+        const parsed = JSON.parse(cleanedJson);
+        return normalizeImportedDeck(parsed, customTitle);
+      }
+
+      // 2) TSV (탭 구분 - 엑셀/노션 붙여넣기) 또는 CSV (쉼표 구분)
+      const firstLine = trimmed.split(/\r?\n/)[0] || '';
+      const delimiter = firstLine.includes('\t') ? '\t' : ',';
+      const rows = parseDelimitedText(trimmed, delimiter);
+
+      if (rows.length === 0) throw new Error('파싱할 행이 없습니다.');
+
+      // 첫 행이 헤더인지 판별
+      const headerCandidates = ['word', '단어', '표기', 'front'];
+      let startIdx = 0;
+      if (headerCandidates.includes(rows[0][0].toLowerCase())) {
+        startIdx = 1;
+      }
+
+      const cards = [];
+      for (let i = startIdx; i < rows.length; i++) {
+        const cols = rows[i];
+        if (!cols[0]) continue;
+        // 열 개수에 따른 유연한 매핑
+        if (cols.length === 2) {
+          cards.push({ word: cols[0], meaning: cols[1] });
+        } else if (cols.length === 3) {
+          cards.push({ word: cols[0], reading: cols[1], meaning: cols[2] });
+        } else {
+          cards.push({
+            word: cols[0],
+            reading: cols[1] || '',
+            meaning: cols[2] || '',
+            exSrc: cols[3] || '',
+            exKo: cols[4] || '',
+            memo: cols[5] || ''
+          });
+        }
+      }
+
+      return normalizeImportedDeck({ cards }, customTitle || '붙여넣기 단어장');
+    }
+
+    async function loadDeckFromUrl(urlStr, silent = false) {
+      try {
+        const res = await fetch(urlStr);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const text = await res.text();
+        const newDeck = parseAnyTextToDeck(text);
+        newDeck.sourceUrl = urlStr;
+
+        // 동일 URL 덱이 이미 있으면 업데이트
+        const existingIdx = decks.findIndex(d => d.sourceUrl === urlStr);
+        if (existingIdx >= 0) {
+          newDeck.id = decks[existingIdx].id;
+          decks[existingIdx] = newDeck;
+        } else {
+          decks.push(newDeck);
+        }
+
+        settings.activeDeckId = newDeck.id;
+        safeSaveJSON(STORAGE_KEYS.DECKS, decks);
+        safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+        populateDeckSelect();
+        rebuildSessionCards(true);
+        if (!silent) showToast(`"${newDeck.title}" 불러오기 완료 (${newDeck.cards.length}개)`);
+      } catch (err) {
+        console.error('URL deck fetch error:', err);
+        showToast('URL 단어장을 불러오지 못했습니다. CORS 또는 주소를 확인하세요.');
+      }
+    }
+
+    /* ==========================================================================
+       9. UI 바인딩 및 설정 동기화
+       ========================================================================== */
+    function applyTheme(theme) {
+      document.documentElement.setAttribute('data-theme', theme);
+      settings.theme = theme;
+      safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+    }
+
+    function updateSettingsUI() {
+      // 리모컨 프리셋 카드 선택 상태
+      document.querySelectorAll('#remotePresetList .radio-card').forEach(card => {
+        card.classList.toggle('selected', card.dataset.preset === settings.remotePreset);
+      });
+
+      const modeNames = {
+        standard: '방향키 모드',
+        onebutton: '원버튼 순환',
+        custom: '커스텀 키'
+      };
+      dom.remoteModeStatus.textContent = modeNames[settings.remotePreset] || '방향키 모드';
+
+      // 커스텀 바인딩 버튼 텍스트
+      document.querySelectorAll('.bind-key-btn').forEach(btn => {
+        const act = btn.dataset.bindAction;
+        btn.textContent = settings.customBindings[act] || '-';
+        btn.classList.toggle('listening', sessionState.listeningAction === act);
+      });
+
+      // 타건음 UI
+      const soundNames = { moktak: '목탁', blue: '청축', off: '무음' };
+      dom.soundLabel.textContent = soundNames[settings.soundStyle] || '목탁';
+      document.getElementById('soundStyleSelect').value = settings.soundStyle;
+      document.getElementById('hapticCheckbox').checked = !!settings.haptic;
+
+      // 자동 발음 토글 버튼
+      dom.btnAutoTts.classList.toggle('active', !!settings.autoTts);
+    }
+
+    function openModal(tabId = 'tabRemote') {
+      document.getElementById('modalBackdrop').classList.add('open');
+      switchModalTab(tabId);
+    }
+
+    function closeModal() {
+      sessionState.listeningAction = null;
+      updateSettingsUI();
+      document.getElementById('modalBackdrop').classList.remove('open');
+    }
+
+    function switchModalTab(tabId) {
+      document.querySelectorAll('.modal-tab').forEach(t => {
+        t.classList.toggle('active', t.dataset.modalTab === tabId);
+      });
+      document.querySelectorAll('.tab-pane').forEach(p => {
+        p.classList.toggle('hidden', p.id !== tabId);
+      });
+    }
+
+    function initEventListeners() {
+      // 테마 전환
+      document.getElementById('btnThemeToggle').addEventListener('click', () => {
+        applyTheme(settings.theme === 'dark' ? 'light' : 'dark');
+      });
+
+      // 타건음 순환 토글 (목탁 -> 청축 -> 무음)
+      document.getElementById('btnSoundToggle').addEventListener('click', () => {
+        const order = ['moktak', 'blue', 'off'];
+        const nextIdx = (order.indexOf(settings.soundStyle) + 1) % order.length;
+        settings.soundStyle = order[nextIdx];
+        safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+        updateSettingsUI();
+        playTactileFeedback('flip');
+      });
+
+      // 자동 발음 토글
+      dom.btnAutoTts.addEventListener('click', () => {
+        settings.autoTts = !settings.autoTts;
+        safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+        updateSettingsUI();
+        showToast(settings.autoTts ? '자동 발음 켜짐' : '자동 발음 꺼짐');
+      });
+
+      // 덱 선택 변경
+      dom.deckSelect.addEventListener('change', (e) => {
+        settings.activeDeckId = e.target.value;
+        safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+        rebuildSessionCards(true);
+      });
+
+      // 학습 모드 탭
+      document.querySelectorAll('.pill-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          sessionState.studyMode = btn.dataset.studyMode;
+          updateStudyModeTabs();
+          rebuildSessionCards(true);
+        });
+      });
+
+      // 카드 본체 터치/클릭 뒤집기
+      dom.flashcard.addEventListener('click', (e) => {
+        if (sessionState.studyMode === 'quiz') return;
+        if (e.target.closest('button')) return;
+        triggerCardFlip();
+      });
+
+      // 발음 듣기 버튼
+      document.getElementById('btnSpeakCard').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const deck = getActiveDeck();
+        const card = sessionState.filteredCards[sessionState.currentIndex];
+        if (card) speakText(card.word, deck.lang);
+      });
+
+      document.getElementById('btnSpeakQuiz').addEventListener('click', (e) => {
+        e.stopPropagation();
+        const deck = getActiveDeck();
+        const card = sessionState.filteredCards[sessionState.currentIndex];
+        if (card) speakText(card.word, deck.lang);
+      });
+
+      // 하단 컨트롤 버튼
+      document.getElementById('btnPrev').addEventListener('click', goPrevCard);
+      document.getElementById('btnNext').addEventListener('click', goNextCard);
+      document.getElementById('btnFlip').addEventListener('click', triggerCardFlip);
+
+      document.getElementById('btnMarkReview').addEventListener('click', () => toggleCardStatus('review'));
+      document.getElementById('btnMarkMemorized').addEventListener('click', () => toggleCardStatus('memorized'));
+
+      // 모달 열기/닫기/탭 전환
+      document.getElementById('btnOpenModal').addEventListener('click', () => openModal('tabRemote'));
+      document.getElementById('btnCloseModal').addEventListener('click', closeModal);
+      document.getElementById('modalBackdrop').addEventListener('click', (e) => {
+        if (e.target.id === 'modalBackdrop') closeModal();
+      });
+
+      document.querySelectorAll('.modal-tab').forEach(tab => {
+        tab.addEventListener('click', () => switchModalTab(tab.dataset.modalTab));
+      });
+
+      // 리모컨 프리셋 선택
+      document.querySelectorAll('#remotePresetList .radio-card').forEach(card => {
+        card.addEventListener('click', () => {
+          settings.remotePreset = card.dataset.preset;
+          safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+          updateSettingsUI();
+          playTactileFeedback('flip');
+        });
+      });
+
+      // 커스텀 키 바인딩 버튼 클릭
+      document.querySelectorAll('.bind-key-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          settings.remotePreset = 'custom';
+          sessionState.listeningAction = btn.dataset.bindAction;
+          updateSettingsUI();
+          showToast('할당할 리모컨 버튼을 지금 누르세요...');
+        });
+      });
+
+      // 타건음 스타일 및 햅틱 설정
+      document.getElementById('soundStyleSelect').addEventListener('change', (e) => {
+        settings.soundStyle = e.target.value;
+        safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+        updateSettingsUI();
+        playTactileFeedback('flip');
+      });
+
+      document.getElementById('hapticCheckbox').addEventListener('change', (e) => {
+        settings.haptic = e.target.checked;
+        safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+      });
+
+      // 커스텀 단어 추가 폼 제출
+      document.getElementById('btnSubmitNewWord').addEventListener('click', () => {
+        const word = document.getElementById('addWordInput').value.trim();
+        const meaning = document.getElementById('addMeaningInput').value.trim();
+        if (!word || !meaning) {
+          showToast('단어와 한국어 뜻은 필수 입력 항목입니다.');
+          return;
+        }
+
+        const deck = getActiveDeck();
+        deck.cards.push({
+          id: `custom-${Date.now()}`,
+          word,
+          reading: document.getElementById('addReadingInput').value.trim(),
+          pos: document.getElementById('addPosInput').value.trim(),
+          meaning,
+          exSrc: document.getElementById('addExSrcInput').value.trim(),
+          exKo: document.getElementById('addExKoInput').value.trim(),
+          memo: document.getElementById('addMemoInput').value.trim()
+        });
+
+        safeSaveJSON(STORAGE_KEYS.DECKS, decks);
+        populateDeckSelect();
+        rebuildSessionCards(false);
+
+        ['addWordInput', 'addReadingInput', 'addPosInput', 'addMeaningInput', 'addExSrcInput', 'addExKoInput', 'addMemoInput']
+          .forEach(id => { document.getElementById(id).value = ''; });
+
+        showToast('새 카드가 현재 단어장에 추가되었습니다.');
+      });
+
+      // AI 프롬프트 복사 (iFrame 호환 execCommand 방식)
+      document.getElementById('btnCopyAiPrompt').addEventListener('click', () => {
+        const ta = document.createElement('textarea');
+        ta.value = AI_PROMPT_TEMPLATE;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('AI 단어장 생성 프롬프트가 복사되었습니다!');
+        } catch (e) {
+          showToast('복사에 실패했습니다.');
+        }
+        document.body.removeChild(ta);
+      });
+
+      // 텍스트 붙여넣기 가져오기
+      document.getElementById('btnImportText').addEventListener('click', () => {
+        const raw = document.getElementById('pasteImportArea').value;
+        const customTitle = document.getElementById('newDeckTitleInput').value.trim();
+        try {
+          const newDeck = parseAnyTextToDeck(raw, customTitle);
+          decks.push(newDeck);
+          settings.activeDeckId = newDeck.id;
+          safeSaveJSON(STORAGE_KEYS.DECKS, decks);
+          safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+          populateDeckSelect();
+          rebuildSessionCards(true);
+          document.getElementById('pasteImportArea').value = '';
+          document.getElementById('newDeckTitleInput').value = '';
+          closeModal();
+          showToast(`"${newDeck.title}" (${newDeck.cards.length}개) 추가 완료!`);
+        } catch (err) {
+          showToast(`가져오기 오류: ${err.message}`);
+        }
+      });
+
+      // 파일 업로드
+      document.getElementById('fileUploadInput').addEventListener('change', (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const baseName = file.name.replace(/\.[^/.]+$/, '');
+            const newDeck = parseAnyTextToDeck(String(reader.result || ''), baseName);
+            decks.push(newDeck);
+            settings.activeDeckId = newDeck.id;
+            safeSaveJSON(STORAGE_KEYS.DECKS, decks);
+            safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+            populateDeckSelect();
+            rebuildSessionCards(true);
+            closeModal();
+            showToast(`파일 "${newDeck.title}" (${newDeck.cards.length}개) 로드 완료!`);
+          } catch (err) {
+            showToast(`파일 파싱 오류: ${err.message}`);
+          }
+          e.target.value = '';
+        };
+        reader.readAsText(file, 'UTF-8');
+      });
+
+      // 현재 단어장 JSON 내보내기
+      document.getElementById('btnExportJson').addEventListener('click', () => {
+        const deck = getActiveDeck();
+        const exportObj = {
+          title: deck.title,
+          lang: deck.lang,
+          cards: deck.cards.map(({ word, reading, pos, meaning, exSrc, exKo, memo }) => ({
+            word, reading, pos, meaning, exSrc, exKo, memo
+          }))
+        };
+        const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${deck.title.replace(/[^\w가-힣-]+/g, '_')}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        showToast('JSON 파일 다운로드를 시작합니다.');
+      });
+
+      // 온라인 URL 로드
+      document.getElementById('btnFetchUrl').addEventListener('click', () => {
+        const urlVal = document.getElementById('remoteUrlInput').value.trim();
+        if (!urlVal) {
+          showToast('JSON URL을 입력해 주세요.');
+          return;
+        }
+        loadDeckFromUrl(urlVal, false);
+      });
+
+      // 공유 링크 복사 (?deck=...)
+      document.getElementById('btnCopyShareUrl').addEventListener('click', () => {
+        const deck = getActiveDeck();
+        const inputUrl = document.getElementById('remoteUrlInput').value.trim() || deck.sourceUrl;
+        if (!inputUrl) {
+          showToast('먼저 온라인 JSON URL을 입력하거나 불러오세요.');
+          return;
+        }
+        const shareUrl = `${window.location.origin}${window.location.pathname}?deck=${encodeURIComponent(inputUrl)}`;
+        const ta = document.createElement('textarea');
+        ta.value = shareUrl;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try {
+          document.execCommand('copy');
+          showToast('공유 링크가 복사되었습니다!');
+        } catch (_) {
+          showToast('링크 복사에 실패했습니다.');
+        }
+        document.body.removeChild(ta);
+      });
+    }
+
+    /* ==========================================================================
+       10. 앱 부트스트랩 (URL 쿼리 파라미터 ?deck= 지원 포함)
+       ========================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      applyTheme(settings.theme);
+      populateDeckSelect();
+      updateSettingsUI();
+      initEventListeners();
+      rebuildSessionCards(true);
+
+      // URL 쿼리스트링 ?deck=https://... 확인
+      const params = new URLSearchParams(window.location.search);
+      const deckUrl = params.get('deck');
+      if (deckUrl) {
+        document.getElementById('remoteUrlInput').value = deckUrl;
+        loadDeckFromUrl(deckUrl, false);
+      }
+    });
+
+    /* ==========================================================================
+       11. ✨ AI·온라인 단어 자동 가져오기 엔진 (경로 A: 무료 API / 경로 B: Gemini)
+       ========================================================================== */
+    const JP_EXTENDED_BANK = [
+      // JLPT N5~N4 기초·일상 (30)
+      { cat: '일상회화', word: '準備する', reading: 'じゅんびする', pos: '동사', meaning: '준비하다', exSrc: '旅行の準備はもう終わりましたか。', exKo: '여행 준비는 벌써 끝났나요?' },
+      { cat: '일상회화', word: '約束', reading: 'やくそく', pos: '명사', meaning: '약속', exSrc: '友達と駅の前で会う約束をした。', exKo: '친구와 역 앞에서 만나기로 약속했다.' },
+      { cat: '일상회화', word: '便利', reading: 'べんり', pos: '형용동사', meaning: '편리함', exSrc: 'このアプリは毎日使えてとても便利だ。', exKo: '이 앱은 매일 쓸 수 있어서 매우 편리하다.' },
+      { cat: '일상회화', word: '安心する', reading: 'あんしんする', pos: '동사', meaning: '안심하다', exSrc: '無事でいると聞いて安心しました。', exKo: '무사하다고 들어서 안심했습니다.' },
+      { cat: '일상회화', word: '説明する', reading: 'せつめいする', pos: '동사', meaning: '설명하다', exSrc: '使い方を分かりやすく説明してください。', exKo: '사용법을 알기 쉽게 설명해 주세요.' },
+      { cat: '일상회화', word: '経験', reading: 'けいけん', pos: '명사', meaning: '경험', exSrc: '日本での生活は良い経験になりました。', exKo: '일본에서의 생활은 좋은 경험이 되었습니다.' },
+      { cat: '일상회화', word: '最近', reading: 'さいきん', pos: '명사/부사', meaning: '최근, 요즘', exSrc: '最近は気温の変化が大きいので気をつけてください。', exKo: '요즘은 기온 변화가 크니 조심하세요.' },
+      { cat: '일상회화', word: '必要', reading: 'ひつよう', pos: '형용동사', meaning: '필요함', exSrc: '手続きにはパスポートが必要です。', exKo: '수속에는 여권이 필요합니다.' },
+      { cat: '일상회화', word: '選ぶ', reading: 'えらぶ', pos: '동사', meaning: '고르다, 선택하다', exSrc: '好きなメニューを一つ選んでください。', exKo: '좋아하는 메뉴를 하나 골라 주세요.' },
+      { cat: '일상회화', word: '届く', reading: 'とどく', pos: '동사', meaning: '도착하다, 닿다', exSrc: '注文した荷物が今朝届きました。', exKo: '주문한 짐이 오늘 아침 도착했습니다.' },
+      { cat: '일상회화', word: '片付ける', reading: 'かたづける', pos: '동사', meaning: '정리하다, 치우다', exSrc: '食事の後ですぐにテーブルを片付けた。', exKo: '식사 후에 바로 테이블을 치웠다.' },
+      { cat: '일상회화', word: '間違える', reading: 'まちがえる', pos: '동사', meaning: '틀리다, 실수하다', exSrc: '電車の乗り換え駅を間違えてしまった。', exKo: '전철 환승역을 잘못 내리고 말았다.' },
+      { cat: '일상회화', word: '相談する', reading: 'そうだんする', pos: '동사', meaning: '상담하다, 의논하다', exSrc: '困ったことがあればいつでも相談してください。', exKo: '곤란한 일이 있으면 언제든 상담해 주세요.' },
+      { cat: '일상회화', word: '習慣', reading: 'しゅうかん', pos: '명사', meaning: '습관', exSrc: '毎朝白湯を飲む習慣を続けています。', exKo: '매일 아침 따뜻한 물을 마시는 습관을 이어가고 있습니다.' },
+      { cat: '일상회화', word: '急ぐ', reading: 'いそぐ', pos: '동사', meaning: '서두르다', exSrc: '終電の時間が近いので急ぎましょう。', exKo: '막차 시간이 가까우니 서두릅시다.' },
+      { cat: '일본어 JLPT', word: '確認する', reading: 'かくにんする', pos: '동사', meaning: '확인하다', exSrc: 'メールの内容をもう一度確認します。', exKo: '메일 내용을 한 번 더 확인하겠습니다.' },
+      { cat: '일본어 JLPT', word: '連絡する', reading: 'れんらくする', pos: '동사', meaning: '연락하다', exSrc: '到着したらすぐに連絡してください。', exKo: '도착하면 바로 연락해 주세요.' },
+      { cat: '일본어 JLPT', word: '予定', reading: 'よてい', pos: '명사', meaning: '예정, 일정', exSrc: '来週の予定はまだ決まっていません。', exKo: '다음 주 예정은 아직 정해지지 않았습니다.' },
+      { cat: '일본어 JLPT', word: '変更', reading: 'へんこう', pos: '명사/동사', meaning: '변경', exSrc: '会議の時間が三時からに変更になった。', exKo: '회의 시간이 3시부터로 변경되었다.' },
+      { cat: '일본어 JLPT', word: '参加する', reading: 'さんかする', pos: '동사', meaning: '참가하다', exSrc: 'オンラインセミナーに無料で参加できます。', exKo: '온라인 세미나에 무료로 참가할 수 있습니다.' },
+      { cat: '일본어 JLPT', word: '利用する', reading: 'りようする', pos: '동사', meaning: '이용하다', exSrc: '駅の近くの図書館をよく利用しています。', exKo: '역 근처 도서관을 자주 이용하고 있습니다.' },
+      { cat: '일본어 JLPT', word: '増える', reading: 'ふえる', pos: '동사', meaning: '늘어나다, 증가하다', exSrc: 'リモートワークをする社員が増えてきた。', exKo: '재택근무를 하는 사원이 늘어나기 시작했다.' },
+      { cat: '일본어 JLPT', word: '減る', reading: 'へる', pos: '동사', meaning: '줄어들다, 감소하다', exSrc: '紙の資料が減ってデジタル化が進んだ。', exKo: '종이 자료가 줄고 디지털화가 진행되었다.' },
+      { cat: '일본어 JLPT', word: '比べる', reading: 'くらべる', pos: '동사', meaning: '비교하다', exSrc: '去年のデータと今年のデータを比べる。', exKo: '작년 데이터와 올해 데이터를 비교하다.' },
+      { cat: '일본어 JLPT', word: '続ける', reading: 'つづける', pos: '동사', meaning: '계속하다', exSrc: '毎日少しずつ単語の勉強を続けている。', exKo: '매일 조금씩 단어 공부를 계속하고 있다.' },
+      { cat: '일본어 JLPT', word: '決める', reading: 'きめる', pos: '동사', meaning: '정하다, 결정하다', exSrc: '次の旅行先は家族と相談して決めます。', exKo: '다음 여행지는 가족과 상의해서 정하겠습니다.' },
+      { cat: '일본어 JLPT', word: '調べる', reading: 'しらべる', pos: '동사', meaning: '조사하다, 찾아보다', exSrc: '分からない言葉はすぐ辞書で調べます。', exKo: '모르는 단어는 바로 사전으로 찾아봅니다.' },
+      { cat: '일본어 JLPT', word: '伝える', reading: 'つたえる', pos: '동사', meaning: '전하다, 전달하다', exSrc: '感謝の気持ちを言葉でしっかり伝えたい。', exKo: '감사의 마음을 말로 제대로 전하고 싶다.' },
+      { cat: '일본어 JLPT', word: '守る', reading: 'まもる', pos: '동사', meaning: '지키다, 준수하다', exSrc: '締め切りを必ず守るようにしています。', exKo: '마감 기한을 반드시 지키려고 노력하고 있습니다.' },
+      { cat: '일본어 JLPT', word: '役立つ', reading: 'やくだつ', pos: '동사', meaning: '도움이 되다, 유용하다', exSrc: 'この知識は実際の仕事で大いに役立つ。', exKo: '이 지식은 실제 업무에서 크게 도움이 된다.' },
+      // JLPT N3 중급 어휘 (30)
+      { cat: '일본어 JLPT', word: '傾向', reading: 'けいこう', pos: '명사', meaning: '경향, 추세', exSrc: '最近は健康志向が高まる傾向にある。', exKo: '최근에는 건강 지향이 높아지는 경향이 있다.' },
+      { cat: '일본어 JLPT', word: '影響', reading: 'えいきょう', pos: '명사/동사', meaning: '영향', exSrc: '天候が農作物の価格に大きな影響を与える。', exKo: '날씨가 농산물 가격에 큰 영향을 미친다.' },
+      { cat: '일본어 JLPT', word: '判断', reading: 'はんだん', pos: '명사/동사', meaning: '판단', exSrc: '冷静に状況を分析して判断を下す。', exKo: '냉정하게 상황을 분석하여 판단을 내리다.' },
+      { cat: '일본어 JLPT', word: '解決', reading: 'かいけつ', pos: '명사/동사', meaning: '해결', exSrc: 'チーム全員で協力して問題を解決した。', exKo: '팀 전원이 협력하여 문제를 해결했다.' },
+      { cat: '일본어 JLPT', word: '工夫', reading: 'くふう', pos: '명사/동사', meaning: '궁리, 고안', exSrc: '限られた予算の中で様々な工夫を凝らす。', exKo: '한정된 예산 속에서 다양한 궁리를 기울이다.' },
+      { cat: '일본어 JLPT', word: '意識', reading: 'いしき', pos: '명사/동사', meaning: '의식', exSrc: 'コストと時間を常に意識して行動する。', exKo: '비용과 시간을 항상 의식하며 행동하다.' },
+      { cat: '일본어 JLPT', word: '限界', reading: 'げんかい', pos: '명사', meaning: '한계', exSrc: '手作業でのデータ管理には限界がある。', exKo: '수작업 데이터 관리에는 한계가 있다.' },
+      { cat: '일본어 JLPT', word: '基準', reading: 'きじゅん', pos: '명사', meaning: '기준', exSrc: '新しい安全基準を満たす製品を開発した。', exKo: '새로운 안전 기준을 충족하는 제품을 개발했다.' },
+      { cat: '일본어 JLPT', word: '目的', reading: 'もくてき', pos: '명사', meaning: '목적', exSrc: '今回の調査の目的を明確にしておこう。', exKo: '이번 조사의 목적을 명확히 해 두자.' },
+      { cat: '일본어 JLPT', word: '結果', reading: 'けっか', pos: '명사', meaning: '결과', exSrc: '努力した結果、目標を達成することができた。', exKo: '노력한 결과, 목표를 달성할 수 있었다.' },
+      { cat: '일본어 JLPT', word: '原因', reading: 'げんいん', pos: '명사', meaning: '원인', exSrc: 'エラーの原因を特定するのに時間がかかった。', exKo: '오류 원인을 특정하는 데 시간이 걸렸다.' },
+      { cat: '일본어 JLPT', word: '効果', reading: 'こうか', pos: '명사', meaning: '효과', exSrc: '新しい広告キャンペーンは予想以上の効果が出た。', exKo: '새 광고 캠페인은 예상 이상의 효과가 나왔다.' },
+      { cat: '일본어 JLPT', word: '状況', reading: 'じょうきょう', pos: '명사', meaning: '상황', exSrc: '現場の状況をリアルタイムで共有する。', exKo: '현장 상황을 실시간으로 공유하다.' },
+      { cat: '일본어 JLPT', word: '対象', reading: 'たいしょう', pos: '명사', meaning: '대상', exSrc: 'このサービスは法人顧客を対象としている。', exKo: '이 서비스는 법인 고객을 대상으로 하고 있다.' },
+      { cat: '일본어 JLPT', word: '範囲', reading: 'はんい', pos: '명사', meaning: '범위', exSrc: '自分の責任範囲をしっかり把握しておく。', exKo: '자신의 책임 범위를 확실히 파악해 두다.' },
+      { cat: '일본어 JLPT', word: '構造', reading: 'こうぞう', pos: '명사', meaning: '구조', exSrc: 'シンプルで分かりやすい構造に設計する。', exKo: '단순하고 이해하기 쉬운 구조로 설계하다.' },
+      { cat: '일본어 JLPT', word: '維持', reading: 'いじ', pos: '명사/동사', meaning: '유지', exSrc: '高い品質を維持しながら生産量を増やす。', exKo: '높은 품질을 유지하면서 생산량을 늘리다.' },
+      { cat: '일본어 JLPT', word: '改善', reading: 'かいぜん', pos: '명사/동사', meaning: '개선', exSrc: 'ユーザーの声をもとに使いやすさを改善した。', exKo: '사용자 목소리를 바탕으로 사용 편의성을 개선했다.' },
+      { cat: '일본어 JLPT', word: '発見', reading: 'はっけん', pos: '명사/동사', meaning: '발견', exSrc: '新しい視点から課題の本質を発見した。', exKo: '새로운 시각에서 과제의 본질을 발견했다.' },
+      { cat: '일본어 JLPT', word: '実現', reading: 'じつげん', pos: '명사/동사', meaning: '실현', exSrc: '長年の夢だった海外展開を実現させた。', exKo: '오랜 꿈이었던 해외 진출을 실현시켰다.' },
+      { cat: '일본어 JLPT', word: '表現', reading: 'ひょうげん', pos: '명사/동사', meaning: '표현', exSrc: '自分の考えを適切な言葉で表現する。', exKo: '자신의 생각을 적절한 말로 표현하다.' },
+      { cat: '일본어 JLPT', word: '整理', reading: 'せいり', pos: '명사/동사', meaning: '정리', exSrc: '会議の前に論点を簡潔に整理しておく。', exKo: '회의 전에 논점을 간결하게 정리해 두다.' },
+      { cat: '일본어 JLPT', word: '比較', reading: 'ひかく', pos: '명사/동사', meaning: '비교', exSrc: '複数の案を比較して最適なものを選ぶ。', exKo: '여러 안을 비교하여 최적인 것을 고르다.' },
+      { cat: '일본어 JLPT', word: '共通', reading: 'きょうつう', pos: '명사/동사', meaning: '공통', exSrc: '成功するチームには共通の特徴がある。', exKo: '성공하는 팀에는 공통된 특징이 있다.' },
+      { cat: '일본어 JLPT', word: '独自', reading: 'どくじ', pos: '형용동사', meaning: '독자적, 고유함', exSrc: '他社にはない独自の技術力を強みにする。', exKo: '타사에는 없는 독자적인 기술력을 강점으로 삼다.' },
+      { cat: '일본어 JLPT', word: '具体的', reading: 'ぐたいてき', pos: '형용동사', meaning: '구체적', exSrc: 'もう少し具体的な事例を挙げてください。', exKo: '조금 더 구체적인 사례를 들어 주세요.' },
+      { cat: '일본어 JLPT', word: '積極的', reading: 'せっきょくてき', pos: '형용동사', meaning: '적극적', exSrc: '新しいツールの導入に積極的に取り組む。', exKo: '새 툴 도입에 적극적으로 임하다.' },
+      { cat: '일본어 JLPT', word: '確実', reading: 'かくじつ', pos: '형용동사', meaning: '확실함', exSrc: '一歩ずつ確実に成果を積み上げていく。', exKo: '한 걸음씩 확실하게 성과를 쌓아 가다.' },
+      { cat: '일본어 JLPT', word: '柔軟', reading: 'じゅうなん', pos: '형용동사', meaning: '유연함', exSrc: '変化の激しい時代には柔軟な思考が必要だ。', exKo: '변화가 심한 시대에는 유연한 사고가 필요하다.' },
+      { cat: '일본어 JLPT', word: '明確', reading: 'めいかく', pos: '형용동사', meaning: '명확함', exSrc: '役割分担を明確にして作業効率を高める。', exKo: '역할 분담을 명확히 하여 작업 효율을 높이다.' },
+      // 비즈니스·실무 일본어 (25)
+      { cat: '비즈니스', word: '打ち合わせ', reading: 'うちあわせ', pos: '명사', meaning: '사전 협의, 미팅', exSrc: '午後の打ち合わせの資料を共有します。', exKo: '오후 미팅 자료를 공유하겠습니다.' },
+      { cat: '비즈니스', word: '見積もり', reading: 'みつもり', pos: '명사', meaning: '견적, 추산', exSrc: '制作費用の見積もりを明日までにお送りします。', exKo: '제작 비용 견적을 내일까지 보내드리겠습니다.' },
+      { cat: '비즈니스', word: '納期', reading: 'のうき', pos: '명사', meaning: '납기, 납품 기한', exSrc: '厳しい納期でしたが予定通り納品できました。', exKo: '빠듯한 납기였지만 예정대로 납품할 수 있었습니다.' },
+      { cat: '비즈니스', word: '取引先', reading: 'とりひきさき', pos: '명사', meaning: '거래처', exSrc: '大切な取引先との信頼関係を築く。', exKo: '소중한 거래처와의 신뢰 관계를 쌓다.' },
+      { cat: '비즈니스', word: '担当者', reading: 'たんとうしゃ', pos: '명사', meaning: '담당자', exSrc: '営業部の担当者に確認してからお返事します。', exKo: '영업부 담당자에게 확인한 뒤 회신하겠습니다.' },
+      { cat: '비즈니스', word: '承認', reading: 'しょうにん', pos: '명사/동사', meaning: '승인', exSrc: '部長の承認が下り次第、プロジェクトを開始します。', exKo: '부장님 승인이 떨어지는 대로 프로젝트를 시작하겠습니다.' },
+      { cat: '비즈니스', word: '提案', reading: 'ていあん', pos: '명사/동사', meaning: '제안', exSrc: '顧客の課題を解決する新しい企画を提案する。', exKo: '고객의 과제를 해결하는 새로운 기획을 제안하다.' },
+      { cat: '비즈니스', word: '合意', reading: 'ごうい', pos: '명사/동사', meaning: '합의', exSrc: '双方が納得する形で合意に達しました。', exKo: '쌍방이 납득하는 형태로 합의에 이르렀습니다.' },
+      { cat: '비즈니스', word: '進捗', reading: 'しんちょく', pos: '명사', meaning: '진척, 진행 상황', exSrc: '週に一度、開発の進捗状況を報告する。', exKo: '일주일에 한 번 개발 진척 상황을 보고하다.' },
+      { cat: '비즈니스', word: '調整', reading: 'ちょうせい', pos: '명사/동사', meaning: '조율, 조정', exSrc: '関係部署と日程の調整を行っています。', exKo: '관계 부서와 일정 조율을 진행하고 있습니다.' },
+      { cat: '비즈니스', word: '交渉', reading: 'こうしょう', pos: '명사/동사', meaning: '교섭, 협상', exSrc: '契約条件について先方と粘り強く交渉する。', exKo: '계약 조건에 대해 상대방과 끈기 있게 협상하다.' },
+      { cat: '비즈니스', word: '依頼', reading: 'いらい', pos: '명사/동사', meaning: '의뢰, 요청', exSrc: '外部の専門家にデザイン制作を依頼した。', exKo: '외부 전문가에게 디자인 제작을 의뢰했다.' },
+      { cat: '비즈니스', word: '報告', reading: 'ほうこく', pos: '명사/동사', meaning: '보고', exSrc: '出張の結果を簡潔にまとめて報告する。', exKo: '출장 결과를 간결하게 정리해 보고하다.' },
+      { cat: '비즈니스', word: '方針', reading: 'ほうしん', pos: '명사', meaning: '방침', exSrc: '来期の事業方針について役員会で議論した。', exKo: '차기 사업 방침에 대해 임원회의에서 논의했다.' },
+      { cat: '비즈니스', word: '効率', reading: 'こうりつ', pos: '명사', meaning: '효율', exSrc: 'AIを活用して業務効率を大幅に向上させる。', exKo: 'AI를 활용해 업무 효율을 대폭 향상시키다.' },
+      { cat: '비즈니스', word: '品質', reading: 'ひんしつ', pos: '명사', meaning: '품질', exSrc: '出荷前に厳しい品質検査を実施している。', exKo: '출하 전에 엄격한 품질 검사를 실시하고 있다.' },
+      { cat: '비즈니스', word: '管理', reading: 'かんり', pos: '명사/동사', meaning: '관리', exSrc: '在庫管理のシステムをクラウドに移行した。', exKo: '재고 관리 시스템을 클라우드로 이전했다.' },
+      { cat: '비즈니스', word: '削減', reading: 'さくげん', pos: '명사/동사', meaning: '삭감, 절감', exSrc: '無駄な経費を削減して利益率を改善する。', exKo: '불필요한 경비를 절감하여 이익률을 개선하다.' },
+      { cat: '비즈니스', word: '拡大', reading: 'かくだい', pos: '명사/동사', meaning: '확대', exSrc: 'アジア市場でのシェア拡大を目指している。', exKo: '아시아 시장에서의 점유율 확대를 목표로 하고 있다.' },
+      { cat: '비즈니스', word: '連携', reading: 'れんけい', pos: '명사/동사', meaning: '연계, 협업', exSrc: '開発チームと営業チームの連携を強化する。', exKo: '개발팀과 영업팀의 연계를 강화하다.' },
+      { cat: '비즈니스', word: '対応', reading: 'たいおう', pos: '명사/동사', meaning: '대응, 처리', exSrc: 'お問い合わせには24時間以内に対応いたします。', exKo: '문의 사항에는 24시간 이내에 대응해 드립니다.' },
+      { cat: '비즈니스', word: '配慮', reading: 'はいりょ', pos: '명사/동사', meaning: '배려', exSrc: '細やかな配慮が行き届いた接客に感動した。', exKo: '세심한 배려가 깃든 접객에 감동했다.' },
+      { cat: '비즈니스', word: '前提', reading: 'ぜんてい', pos: '명사', meaning: '전제', exSrc: '長期的な運用を前提としてシステムを組む。', exKo: '장기적인 운용을 전제로 시스템을 구성하다.' },
+      { cat: '비즈니스', word: '妥当', reading: 'だとう', pos: '형용동사', meaning: '타당함', exSrc: '提示された価格は市場相場から見て妥当だ。', exKo: '제시된 가격은 시장 시세로 볼 때 타당하다.' },
+      { cat: '비즈니스', word: '円滑', reading: 'えんかつ', pos: '형용동사', meaning: '원활함', exSrc: '円滑なコミュニケーションが成功の鍵を握る。', exKo: '원활한 커뮤니케이션이 성공의 열쇠를 쥔다.' }
+    ];
+
+    // 영단어 전체 오프라인 폴백 뱅크 (주제별 12~15개)
+    const EN_OFFLINE_FALLBACK = {
+      '비즈니스': [
+        { word: 'Stakeholder', reading: '/ˈsteɪkˌhoʊl.dɚ/', pos: '명사', meaning: '이해관계자', exSrc: 'We need buy-in from all key stakeholders before launch.', exKo: '출시 전에 모든 주요 이해관계자의 동의를 얻어야 합니다.' },
+        { word: 'Deliverable', reading: '/dɪˈlɪv.ɚ.ə.bəl/', pos: '명사', meaning: '산출물, 결과물', exSrc: 'Please review the Q2 project deliverables by Friday.', exKo: '금요일까지 2분기 프로젝트 산출물을 검토해 주세요.' },
+        { word: 'Consensus', reading: '/kənˈsen.səs/', pos: '명사', meaning: '합의, 의견 일치', exSrc: 'The committee reached a consensus on the budget.', exKo: '위원회는 예산안에 대해 합의에 도달했습니다.' },
+        { word: 'Streamline', reading: '/ˈstriːm.laɪn/', pos: '동사', meaning: '간소화하다, 효율화하다', exSrc: 'Automation helped streamline our onboarding process.', exKo: '자동화는 온보딩 절차를 간소화하는 데 도움이 되었습니다.' },
+        { word: 'Synergy', reading: '/ˈsɪn.ɚ.dʒi/', pos: '명사', meaning: '시너지, 상승효과', exSrc: 'The merger created strong synergy between the two teams.', exKo: '이번 합병은 두 팀 사이에 강한 시너지를 만들어냈습니다.' },
+        { word: 'KPI', reading: '/ˌkeɪ.piːˈaɪ/', pos: '명사', meaning: '핵심 성과 지표', exSrc: 'Customer satisfaction is our primary KPI this quarter.', exKo: '고객 만족도가 이번 분기 우리의 핵심 성과 지표입니다.' },
+        { word: 'Procurement', reading: '/prəˈkjʊr.mənt/', pos: '명사', meaning: '조달, 구매', exSrc: 'The procurement team negotiated a 15% discount.', exKo: '조달팀이 15% 할인을 협상해 냈습니다.' },
+        { word: 'Audit', reading: '/ˈɔː.dɪt/', pos: '명사/동사', meaning: '감사, 정밀 점검', exSrc: 'We conduct an annual security audit every autumn.', exKo: '우리는 매년 가을 정기 보안 감사를 실시합니다.' },
+        { word: 'Retention', reading: '/rɪˈten.ʃən/', pos: '명사', meaning: '유지율, 보유', exSrc: 'High employee retention reflects a healthy culture.', exKo: '높은 직원 유지율은 건강한 조직 문화를 반영합니다.' },
+        { word: 'Bandwidth', reading: '/ˈbænd.wɪdθ/', pos: '명사', meaning: '처리 여력, 업무 여유', exSrc: 'Do you have the bandwidth to take on another client?', exKo: '다른 고객사를 추가로 맡을 업무 여력이 되시나요?' },
+        { word: 'Overhead', reading: '/ˈoʊ.vɚ.hed/', pos: '명사', meaning: '간접비, 고정 운영비', exSrc: 'Moving to cloud infrastructure lowered our overhead.', exKo: '클라우드 인프라로 이전하면서 고정 운영비가 줄었습니다.' },
+        { word: 'Milestone', reading: '/ˈmaɪl.stoʊn/', pos: '명사', meaning: '중요 단계, 이정표', exSrc: 'Reaching 100,000 active users was a major milestone.', exKo: '활성 사용자 10만 명 달성은 중요한 이정표였습니다.' }
+      ],
+      'AI·데이터': [
+        { word: 'Embedding', reading: '/ɪmˈbed.ɪŋ/', pos: '명사', meaning: '임베딩 (데이터의 벡터 수치 표현)', exSrc: 'Text embeddings capture semantic similarity between sentences.', exKo: '텍스트 임베딩은 문장 간의 의미적 유사성을 포착합니다.' },
+        { word: 'Fine-tuning', reading: '/ˌfaɪnˈtuː.nɪŋ/', pos: '명사', meaning: '미세 조정 (사전학습 모델 추가 학습)', exSrc: 'Fine-tuning on domain data improved classification accuracy.', exKo: '도메인 데이터로 미세 조정하자 분류 정확도가 향상되었습니다.' },
+        { word: 'Inference', reading: '/ˈɪn.fɚ.əns/', pos: '명사', meaning: '추론 (학습된 모델의 예측 실행)', exSrc: 'Edge devices now run lightweight AI inference locally.', exKo: '이제 엣지 기기도 로컬에서 경량 AI 추론을 실행합니다.' },
+        { word: 'Tokenization', reading: '/ˌtoʊ.kən.əˈzeɪ.ʃən/', pos: '명사', meaning: '토큰화 (텍스트를 작은 단위로 분할)', exSrc: 'Efficient tokenization reduces API cost and context length.', exKo: '효율적인 토큰화는 API 비용과 컨텍스트 길이를 줄여줍니다.' },
+        { word: 'Anomaly', reading: '/əˈnɑː.mə.li/', pos: '명사', meaning: '이상 징후, 변칙 데이터', exSrc: 'The model flags any anomaly in real-time sensor logs.', exKo: '이 모델은 실시간 센서 로그의 이상 징후를 감지해 표시합니다.' },
+        { word: 'Overfitting', reading: '/ˌoʊ.vɚˈfɪt.ɪŋ/', pos: '명사', meaning: '과적합 (학습 데이터에만 지나치게 맞춰짐)', exSrc: 'Dropout layers help prevent overfitting on small datasets.', exKo: '드롭아웃 계층은 작은 데이터셋에서의 과적합을 방지합니다.' },
+        { word: 'Prompt', reading: '/prɑːmpt/', pos: '명사', meaning: '프롬프트 (AI 입력 지시문)', exSrc: 'Clear system prompts yield far more structured outputs.', exKo: '명확한 시스템 프롬프트는 훨씬 구조화된 출력을 이끌어냅니다.' },
+        { word: 'Dataset', reading: '/ˈdeɪ.t̬ə.set/', pos: '명사', meaning: '데이터셋, 자료 집합', exSrc: 'Curating a clean dataset is half the battle in ML.', exKo: '깨끗한 데이터셋을 구축하는 것이 머신러닝의 절반입니다.' },
+        { word: 'Algorithm', reading: '/ˈæl.ɡə.rɪ.ðəm/', pos: '명사', meaning: '알고리즘, 연산 절차', exSrc: 'The recommendation algorithm adapts to user preferences.', exKo: '추천 알고리즘은 사용자 선호도에 맞춰 적응합니다.' },
+        { word: 'Correlation', reading: '/ˌkɔːr.əˈleɪ.ʃən/', pos: '명사', meaning: '상관관계', exSrc: 'Remember that correlation does not always imply causation.', exKo: '상관관계가 항상 인과관계를 의미하지는 않음을 기억하세요.' },
+        { word: 'Pipeline', reading: '/ˈpaɪp.laɪn/', pos: '명사', meaning: '데이터 처리 파이프라인', exSrc: 'Our ETL pipeline ingests millions of events hourly.', exKo: '우리의 ETL 파이프라인은 매시간 수백만 건의 이벤트를 수집합니다.' },
+        { word: 'Parameter', reading: '/pəˈræm.ə.t̬ɚ/', pos: '명사', meaning: '매개변수, 파라미터', exSrc: 'Smaller models with 7B parameters run fast on laptops.', exKo: '70억 파라미터 규모의 소형 모델은 노트북에서도 빠르게 동작합니다.' }
+      ],
+      '식품·바이오': [
+        { word: 'Fermentation', reading: '/ˌfɜːr.menˈteɪ.ʃən/', pos: '명사', meaning: '발효', exSrc: 'Controlled fermentation enhances both flavor and shelf life.', exKo: '제어된 발효는 풍미와 유통기한을 모두 향상시킵니다.' },
+        { word: 'Pasteurization', reading: '/ˌpæs.tʃɚ.əˈzeɪ.ʃən/', pos: '명사', meaning: '저온 살균', exSrc: 'Pasteurization eliminates harmful pathogens in dairy products.', exKo: '저온 살균은 유제품 속 유해 병원균을 제거합니다.' },
+        { word: 'Shelf life', reading: '/ˈʃelf ˌlaɪf/', pos: '명사', meaning: '유통기한, 보존 수명', exSrc: 'Vacuum packaging extends the shelf life of fresh produce.', exKo: '진공 포장은 신선 농산물의 유통기한을 연장해 줍니다.' },
+        { word: 'Traceability', reading: '/ˌtreɪ.səˈbɪl.ə.t̬i/', pos: '명사', meaning: '이력 추적성', exSrc: 'Full supply-chain traceability ensures food safety compliance.', exKo: '전체 공급망 이력 추적성은 식품 안전 규정 준수를 보장합니다.' },
+        { word: 'Contamination', reading: '/kənˌtæm.əˈneɪ.ʃən/', pos: '명사', meaning: '오염, 혼입', exSrc: 'Strict hygiene protocols prevent cross-contamination.', exKo: '엄격한 위생 수칙은 교차 오염을 예방합니다.' },
+        { word: 'Preservative', reading: '/prɪˈzɜːr.və.t̬ɪv/', pos: '명사', meaning: '보존료, 방부제', exSrc: 'Consumers increasingly prefer snacks without artificial preservatives.', exKo: '소비자들은 인공 보존료가 없는 간식을 점점 더 선호합니다.' },
+        { word: 'Formulation', reading: '/ˌfɔːr.mjəˈleɪ.ʃən/', pos: '명사', meaning: '배합, 제형 설계', exSrc: 'The R&D team adjusted the protein bar formulation.', exKo: '연구개발팀이 단백질 바의 배합 비율을 조정했습니다.' },
+        { word: 'Bioavailability', reading: '/ˌbaɪ.oʊ.əˌveɪ.ləˈbɪl.ə.t̬i/', pos: '명사', meaning: '생체 이용률', exSrc: 'Encapsulation improves the bioavailability of vitamins.', exKo: '캡슐화 기술은 비타민의 생체 이용률을 높여줍니다.' },
+        { word: 'Probiotic', reading: '/ˌproʊ.baɪˈɑː.t̬ɪk/', pos: '명사/형용사', meaning: '프로바이오틱스, 유익균', exSrc: 'Yogurt is rich in live probiotic cultures.', exKo: '요거트에는 살아있는 유익균이 풍부합니다.' },
+        { word: 'Allergen', reading: '/ˈæl.ɚ.dʒən/', pos: '명사', meaning: '알레르기 유발 물질', exSrc: 'All major allergens must be clearly labeled on the package.', exKo: '모든 주요 알레르기 유발 물질은 포장에 명확히 표기해야 합니다.' },
+        { word: 'Emulsifier', reading: '/ɪˈmʌl.sə.faɪ.ɚ/', pos: '명사', meaning: '유화제', exSrc: 'Lecithin acts as a natural emulsifier in chocolate.', exKo: '레시틴은 초콜릿에서 천연 유화제 역할을 합니다.' },
+        { word: 'Sterilization', reading: '/ˌster.əl.əˈzeɪ.ʃən/', pos: '명사', meaning: '멸균, 살균 처리', exSrc: 'Thermal sterilization guarantees commercial sterility.', exKo: '열 멸균 처리는 상업적 무균 상태를 보장합니다.' }
+      ],
+      '일상회화': [
+        { word: 'Rain check', reading: '/ˈreɪn ˌtʃek/', pos: '명사', meaning: '다음 기회로 미룸', exSrc: 'Mind if I take a rain check on dinner tonight?', exKo: '오늘 저녁 식사는 다음 기회로 미뤄도 될까요?' },
+        { word: 'Wrap up', reading: '/ˈræp ˌʌp/', pos: '동사구', meaning: '마무리하다', exSrc: 'Let’s wrap up the meeting five minutes early.', exKo: '회의를 5분 일찍 마무리합시다.' },
+        { word: 'Figure out', reading: '/ˈfɪɡ.jɚ ˌaʊt/', pos: '동사구', meaning: '알아내다, 해결책을 찾다', exSrc: 'I’m still trying to figure out how this remote works.', exKo: '이 리모컨이 어떻게 작동하는지 아직 알아보는 중이에요.' },
+        { word: 'Catch up', reading: '/ˈkætʃ ˌʌp/', pos: '동사구', meaning: '밀린 이야기를 나누다, 따라잡다', exSrc: 'Let’s grab coffee soon and catch up!', exKo: '조만간 커피 한잔하면서 밀린 이야기 나눠요!' },
+        { word: 'Spontaneous', reading: '/spɑːnˈteɪ.ni.əs/', pos: '형용사', meaning: '즉흥적인, 자발적인', exSrc: 'We took a spontaneous weekend trip to Busan.', exKo: '우리는 즉흥적으로 부산 주말 여행을 떠났습니다.' },
+        { word: 'Overwhelmed', reading: '/ˌoʊ.vɚˈwelmd/', pos: '형용사', meaning: '압도된, 벅찬', exSrc: 'She felt overwhelmed by the sheer number of emails.', exKo: '그녀는 엄청난 양의 이메일에 압도당하는 기분이었습니다.' },
+        { word: 'Down-to-earth', reading: '/ˌdaʊn.tuːˈɜːθ/', pos: '형용사', meaning: '소탈한, 현실적인', exSrc: 'Despite his success, he remains very down-to-earth.', exKo: '성공에도 불구하고 그는 여전히 매우 소탈합니다.' },
+        { word: 'Hectic', reading: '/ˈhek.tɪk/', pos: '형용사', meaning: '눈코 뜰 새 없이 바쁜', exSrc: 'It’s been a hectic week at the office.', exKo: '사무실에서 정말 눈코 뜰 새 없이 바쁜 한 주였습니다.' },
+        { word: 'Worthwhile', reading: '/ˌwɜːθˈwaɪl/', pos: '형용사', meaning: '가치 있는, 보람 있는', exSrc: 'Learning a few words a day is truly worthwhile.', exKo: '하루에 몇 단어씩 배우는 것은 정말 가치 있는 일입니다.' },
+        { word: 'Cozy', reading: '/ˈkoʊ.zi/', pos: '형용사', meaning: '아늑한, 포근한', exSrc: 'This small café has a warm and cozy atmosphere.', exKo: '이 작은 카페는 따뜻하고 아늑한 분위기가 있습니다.' },
+        { word: 'Reluctant', reading: '/rɪˈlʌk.tənt/', pos: '형용사', meaning: '꺼리는, 주저하는', exSrc: 'He was reluctant to speak in front of a large crowd.', exKo: '그는 많은 사람들 앞에서 말하는 것을 주저했습니다.' },
+        { word: 'Accommodate', reading: '/əˈkɑː.mə.deɪt/', pos: '동사', meaning: '수용하다, 편의를 맞추다', exSrc: 'The hotel happily accommodated our late check-in.', exKo: '호텔 측에서 우리의 늦은 체크인을 기꺼이 맞춰주었습니다.' }
+      ]
+    };
+
+    const KEYWORD_TO_EN_QUERY = {
+      '비즈니스': 'business',
+      'AI·데이터': 'artificial intelligence',
+      '식품·바이오': 'food science',
+      '일상회화': 'conversation'
+    };
+
+    let autoFetchState = {
+      expanded: false,
+      preset: '비즈니스',
+      keyword: '비즈니스',
+      count: 15,
+      loading: false,
+      progressText: '',
+      fallbackOffer: null, // { topic, count }
+      geminiPrompt: '',
+      geminiOpen: false
+    };
+
+    function maskApiKey(key) {
+      if (!key || key.length < 8) return key ? '****' : '미저장';
+      return `${key.slice(0, 4)}••••••••${key.slice(-4)}`;
+    }
+
+    function isJapaneseTopic(topic) {
+      const t = (topic || '').toLowerCase();
+      return t.includes('일본') || t.includes('jlpt') || t.includes('히라가나') || t.includes('가타카나') || /[\u3040-\u30ff]/.test(t);
+    }
+
+    function applyGeneratedDeck(newDeck, toastMessage) {
+      decks.push(newDeck);
+      settings.activeDeckId = newDeck.id;
+      safeSaveJSON(STORAGE_KEYS.DECKS, decks);
+      safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+      populateDeckSelect();
+      sessionState.studyMode = 'sequential';
+      updateStudyModeTabs();
+      rebuildSessionCards(true);
+      if (document.getElementById('modalBackdrop').classList.contains('open')) {
+        closeModal();
+      }
+      if (toastMessage) showToast(toastMessage);
+    }
+
+    function createOfflineFallbackDeck(topic, count) {
+      const cleanTopic = (topic || '비즈니스').trim();
+      if (isJapaneseTopic(cleanTopic)) {
+        const shuffled = [...JP_EXTENDED_BANK].sort(() => Math.random() - 0.5);
+        const picked = shuffled.slice(0, Math.max(10, count));
+        return {
+          id: `auto-fb-${Date.now()}`,
+          title: `${cleanTopic} · 온라인 수집 (${picked.length})`,
+          lang: 'ja-JP',
+          cards: picked.map((item, idx) => ({
+            id: `fb-jp-${Date.now()}-${idx}`,
+            word: item.word, reading: item.reading, pos: item.pos,
+            meaning: item.meaning, exSrc: item.exSrc, exKo: item.exKo,
+            memo: `내장 확장 뱅크 (${item.cat})`
+          }))
+        };
+      }
+      const bankKey = EN_OFFLINE_FALLBACK[cleanTopic] ? cleanTopic : '비즈니스';
+      const sourceList = EN_OFFLINE_FALLBACK[bankKey];
+      const picked = sourceList.slice(0, Math.max(10, Math.min(count, sourceList.length)));
+      return {
+        id: `auto-fb-${Date.now()}`,
+        title: `${cleanTopic} · 온라인 수집 (${picked.length})`,
+        lang: 'en-US',
+        cards: picked.map((item, idx) => ({
+          id: `fb-en-${Date.now()}-${idx}`,
+          word: item.word, reading: item.reading, pos: item.pos,
+          meaning: item.meaning, exSrc: item.exSrc, exKo: item.exKo,
+          memo: `${cleanTopic} 핵심 어휘`
+        }))
+      };
+    }
+
+    // 타임아웃 지원 fetch 유틸리티
+    async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+      try {
+        return await fetch(url, { ...options, signal: controller.signal });
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+
+    // MyMemory 번역 헬퍼 (8초 타임아웃 적용)
+    async function translateEnToKo(text) {
+      if (!text) return '';
+      const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=en|ko`;
+      const res = await fetchWithTimeout(url, {}, 8000);
+      if (!res.ok) throw new Error('MyMemory HTTP error');
+      const data = await res.json();
+      const translated = data?.responseData?.translatedText;
+      if (!translated || translated.includes('MYMEMORY WARNING')) {
+        throw new Error('MyMemory quota or empty');
+      }
+      return translated.trim();
+    }
+
+    // 경로 A: API 키 없이 무료 자동 수집 실행 (병렬 워커 풀 + 타임아웃 + 차단 감지)
+    async function runFreeOnlineWordFetch(topicInput, targetCount) {
+      const rawTopic = (topicInput || '').trim() || '비즈니스';
+      const count = Number(targetCount) || 15;
+
+      autoFetchState.loading = true;
+      autoFetchState.fallbackOffer = null;
+      autoFetchState.progressText = `가져오는 중… 0/${count}`;
+      renderAllAutoFetchPanels();
+
+      try {
+        // 1) 일본어 주제 처리: 내장 확장 뱅크 우선 추출
+        if (isJapaneseTopic(rawTopic)) {
+          const matched = JP_EXTENDED_BANK.filter(item =>
+            rawTopic.includes(item.cat) ||
+            item.meaning.includes(rawTopic) ||
+            item.exKo.includes(rawTopic)
+          );
+          const others = JP_EXTENDED_BANK.filter(item => !matched.includes(item));
+          const pool = [
+            ...matched.sort(() => Math.random() - 0.5),
+            ...others.sort(() => Math.random() - 0.5)
+          ];
+
+          const selected = [];
+          const seen = new Set();
+          for (const item of pool) {
+            if (selected.length >= count) break;
+            if (seen.has(item.word)) continue;
+            seen.add(item.word);
+            selected.push(item);
+            autoFetchState.progressText = `가져오는 중… ${selected.length}/${count}`;
+            renderAllAutoFetchPanels();
+            await new Promise(r => setTimeout(r, 20));
+          }
+
+          const newDeck = {
+            id: `auto-jp-${Date.now()}`,
+            title: `${rawTopic} · 온라인 수집 (${selected.length})`,
+            lang: 'ja-JP',
+            cards: selected.map((item, idx) => ({
+              id: `jp-auto-${Date.now()}-${idx}`,
+              word: item.word,
+              reading: item.reading,
+              pos: item.pos,
+              meaning: item.meaning,
+              exSrc: item.exSrc,
+              exKo: item.exKo,
+              memo: `${item.cat} 필수 어휘`
+            }))
+          };
+
+          autoFetchState.loading = false;
+          autoFetchState.progressText = '';
+          renderAllAutoFetchPanels();
+          applyGeneratedDeck(newDeck, `${count}개 중 ${selected.length}개 수집 완료!`);
+          return;
+        }
+
+        // 2) 영단어 주제 처리: Datamuse -> 병렬 워커 풀(동시 6개)
+        let queryEn = KEYWORD_TO_EN_QUERY[rawTopic] || rawTopic;
+        if (/[가-힣]/.test(queryEn)) {
+          try {
+            const koToEnRes = await fetchWithTimeout(
+              `https://api.mymemory.translated.net/get?q=${encodeURIComponent(queryEn)}&langpair=ko|en`,
+              {},
+              8000
+            );
+            const koToEnJson = await koToEnRes.json();
+            const enWord = koToEnJson?.responseData?.translatedText;
+            if (enWord && /^[a-zA-Z\s-]+$/.test(enWord)) {
+              queryEn = enWord.trim();
+            }
+          } catch (_) {
+            queryEn = 'business';
+          }
+        }
+
+        const candidateSet = new Set();
+        const usedWords = new Set();
+
+        async function fetchDatamuseCandidates(maxLimit) {
+          const dmRes1 = await fetchWithTimeout(
+            `https://api.datamuse.com/words?ml=${encodeURIComponent(queryEn)}&max=${maxLimit}`,
+            {},
+            8000
+          ).catch(() => null);
+          if (dmRes1 && dmRes1.ok) {
+            const dmList1 = await dmRes1.json();
+            dmList1.forEach(item => {
+              if (item?.word && /^[a-zA-Z-]{3,18}$/.test(item.word)) {
+                candidateSet.add(item.word.toLowerCase());
+              }
+            });
+          }
+
+          if (candidateSet.size < maxLimit) {
+            const dmRes2 = await fetchWithTimeout(
+              `https://api.datamuse.com/words?rel_trg=${encodeURIComponent(queryEn)}&max=${maxLimit}`,
+              {},
+              8000
+            ).catch(() => null);
+            if (dmRes2 && dmRes2.ok) {
+              const dmList2 = await dmRes2.json();
+              dmList2.forEach(item => {
+                if (item?.word && /^[a-zA-Z-]{3,18}$/.test(item.word)) {
+                  candidateSet.add(item.word.toLowerCase());
+                }
+              });
+            }
+          }
+        }
+
+        await fetchDatamuseCandidates(Math.min(45, count * 3));
+        if (candidateSet.size === 0) {
+          throw new Error('후보 단어를 수집하지 못했습니다.');
+        }
+
+        const collectedCards = [];
+        let dictBlocked = false; // dictionaryapi.dev 3초 초과 또는 실패 시 즉시 스킵 플래그
+
+        async function processSingleCandidate(cand) {
+          const formattedWord = cand.charAt(0).toUpperCase() + cand.slice(1);
+          let reading = '';
+          let pos = '';
+          let exampleSentence = '';
+          let defText = '';
+
+          // dictionaryapi.dev: 차단 플래그가 꺼져 있을 때만 3초 타임아웃으로 시도
+          if (!dictBlocked) {
+            try {
+              const dictRes = await fetchWithTimeout(
+                `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(cand)}`,
+                {},
+                3000
+              );
+              if (!dictRes.ok) {
+                dictBlocked = true;
+              } else {
+                const dictJson = await dictRes.json();
+                const entry = Array.isArray(dictJson) ? dictJson[0] : null;
+                if (entry) {
+                  reading = entry.phonetic || (entry.phonetics?.find(p => p.text)?.text) || '';
+                  const meaningObj = entry.meanings?.[0];
+                  if (meaningObj) {
+                    pos = meaningObj.partOfSpeech || '';
+                    const defObj = meaningObj.definitions?.[0];
+                    if (defObj) {
+                      defText = (defObj.definition || '').trim();
+                      exampleSentence = (defObj.example || '').trim();
+                    }
+                  }
+                }
+              }
+            } catch (_) {
+              dictBlocked = true;
+            }
+          }
+
+          // 예문 후보가 12자 미만이면 버리고 정의문(defText)을 exSrc로 사용
+          const validExample = exampleSentence.length >= 12 ? exampleSentence : '';
+          const finalExSrc = validExample || defText;
+
+          // 첫 절 추출 헬퍼 (';' -> ':' -> ',' 순으로 첫 구분자 앞, 없으면 45자까지)
+          function extractFirstClause(translatedStr) {
+            const clean = (translatedStr || '').replace(/\.+$/, '').trim();
+            for (const sep of [';', ':', ',']) {
+              const idx = clean.indexOf(sep);
+              if (idx > 0) return clean.slice(0, idx).trim();
+            }
+            return clean.slice(0, 45).trim();
+          }
+
+          let koMeaning = '';
+          let exKo = '';
+
+          try {
+            // 단어 번역값(translateEnToKo(cand))을 우선 사용
+            const wordKo = await translateEnToKo(cand).catch(() => '');
+            if (wordKo && wordKo.toLowerCase() !== cand.toLowerCase()) {
+              koMeaning = wordKo;
+            } else if (defText) {
+              // 단어 번역이 비었거나 단어와 같을 때만 정의문 번역 첫 절을 대신 사용
+              const fallbackDefKo = await translateEnToKo(defText.slice(0, 150)).catch(() => '');
+              if (fallbackDefKo) {
+                koMeaning = extractFirstClause(fallbackDefKo);
+              }
+            }
+
+            // exSrc가 존재할 때만 해당 원문을 번역하여 exKo에 반영
+            if (finalExSrc) {
+              exKo = await translateEnToKo(finalExSrc.slice(0, 150)).catch(() => '');
+            }
+          } catch (_) {
+            return null;
+          }
+
+          if (!koMeaning || koMeaning.toLowerCase() === cand.toLowerCase()) {
+            return null;
+          }
+
+          return {
+            id: `en-auto-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+            word: formattedWord,
+            reading,
+            pos,
+            meaning: koMeaning,
+            exSrc: finalExSrc,
+            exKo: exKo === koMeaning ? '' : exKo,
+            memo: `${rawTopic} 연관 어휘`
+          };
+        }
+
+        // 동시 6개 병렬 워커 풀 실행
+        async function runWorkerPool(queue) {
+          let cursor = 0;
+          const workerCount = Math.min(6, queue.length);
+
+          async function worker() {
+            while (cursor < queue.length && collectedCards.length < count) {
+              const idx = cursor++;
+              const cand = queue[idx];
+              if (!cand || usedWords.has(cand)) continue;
+              usedWords.add(cand);
+
+              const card = await processSingleCandidate(cand);
+              if (card && collectedCards.length < count) {
+                collectedCards.push(card);
+                autoFetchState.progressText = `가져오는 중… ${collectedCards.length}/${count}`;
+                renderAllAutoFetchPanels();
+              }
+            }
+          }
+
+          await Promise.all(Array.from({ length: workerCount }, () => worker()));
+        }
+
+        const initialQueue = Array.from(candidateSet).filter(w => !usedWords.has(w));
+        await runWorkerPool(initialQueue);
+
+        // 목표 개수에 못 미치고 후보가 소진된 경우 dm max=60으로 추가 후보 확보 후 보충
+        if (collectedCards.length < count) {
+          await fetchDatamuseCandidates(60);
+          const extraQueue = Array.from(candidateSet).filter(w => !usedWords.has(w));
+          if (extraQueue.length > 0) {
+            await runWorkerPool(extraQueue);
+          }
+        }
+
+        if (collectedCards.length === 0) {
+          throw new Error('단어 번역 수집에 실패했습니다.');
+        }
+
+        const newDeck = {
+          id: `auto-en-${Date.now()}`,
+          title: `${rawTopic} · 온라인 수집 (${collectedCards.length})`,
+          lang: 'en-US',
+          cards: collectedCards
+        };
+
+        autoFetchState.loading = false;
+        autoFetchState.progressText = '';
+        renderAllAutoFetchPanels();
+
+        const msg = collectedCards.length < count
+          ? `${count}개 중 ${collectedCards.length}개 수집 완료`
+          : `${rawTopic} · 온라인 수집 (${collectedCards.length}) 생성 완료!`;
+        applyGeneratedDeck(newDeck, msg);
+      } catch (err) {
+        console.warn('Free online word fetch failed:', err);
+        autoFetchState.loading = false;
+        autoFetchState.progressText = '';
+        autoFetchState.fallbackOffer = { topic: rawTopic, count };
+        renderAllAutoFetchPanels();
+        showToast('온라인 단어 수집에 실패했습니다. 아래 폴백 생성을 이용해 보세요.');
+      }
+    }
+
+    // 경로 B: Gemini API 키로 자연어 단어장 생성
+    async function runGeminiNaturalFetch(naturalPrompt) {
+      const apiKey = (settings.geminiApiKey || '').trim();
+      if (!apiKey) {
+        showToast('키를 먼저 저장하거나 위의 무료 가져오기를 쓰세요');
+        return;
+      }
+
+      const promptText = (naturalPrompt || '').trim();
+      if (!promptText) {
+        showToast('생성할 단어장 설명을 입력해 주세요. 예: 일본 출장 필수 회화 15개');
+        return;
+      }
+
+      autoFetchState.loading = true;
+      autoFetchState.progressText = 'Gemini로 단어장 생성 중…';
+      renderAllAutoFetchPanels();
+
+      const instruction = `사용자 요청에 맞는 스마트 플래시카드 단어장 JSON을 생성하세요.
+요청: "${promptText}"
+
+반드시 아래 JSON 스키마 객체만 반환하세요:
+{
+  "title": "간결한 단어장 제목",
+  "lang": "en-US 또는 ja-JP 또는 ko-KR",
+  "cards": [
+    {
+      "word": "단어 또는 표기",
+      "reading": "발음기호 또는 후리가나",
+      "pos": "품사",
+      "meaning": "한국어 뜻",
+      "exSrc": "원문 예문",
+      "exKo": "예문 한국어 해석",
+      "memo": "짧은 학습 메모"
+    }
+  ]
+}`;
+
+      try {
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+        const response = await fetchWithTimeout(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: instruction }] }],
+            generationConfig: {
+              responseMimeType: 'application/json'
+            }
+          })
+        }, 15000);
+
+        if (!response.ok) {
+          if (response.status === 400 || response.status === 403) {
+            throw new Error('API 키가 올바르지 않습니다');
+          }
+          if (response.status === 429) {
+            throw new Error('할당량 초과, 잠시 후 다시');
+          }
+          throw new Error(`네트워크 오류 (${response.status}), 잠시 후 다시 시도해 주세요`);
+        }
+
+        const data = await response.json();
+        const rawCandidate = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const cleaned = rawCandidate.replace(/^```(?:json)?\s*/i, '').replace(/```\s*$/, '').trim();
+        const parsed = JSON.parse(cleaned);
+        const normalized = normalizeImportedDeck(parsed, parsed.title || `${promptText.slice(0, 14)} · AI 수집`);
+        normalized.title = `${normalized.title} (${normalized.cards.length})`;
+
+        autoFetchState.loading = false;
+        autoFetchState.progressText = '';
+        renderAllAutoFetchPanels();
+        applyGeneratedDeck(normalized, `"${normalized.title}" 생성 완료!`);
+      } catch (err) {
+        console.warn('Gemini generation error:', err);
+        autoFetchState.loading = false;
+        autoFetchState.progressText = '';
+        renderAllAutoFetchPanels();
+
+        const knownErrors = ['API 키가 올바르지 않습니다', '할당량 초과, 잠시 후 다시'];
+        if (knownErrors.includes(err.message)) {
+          showToast(err.message);
+        } else if (err.message && err.message.startsWith('네트워크 오류')) {
+          showToast(err.message);
+        } else {
+          showToast('네트워크 연결 또는 응답 형식을 확인 후 다시 시도해 주세요.');
+        }
+      }
+    }
+
+    // 메인 화면 & 모달 공용 패널 렌더러
+    function buildAutoFetchPanelHTML(contextId) {
+      const presets = ['비즈니스', 'AI·데이터', '식품·바이오', '일상회화', '일본어 JLPT'];
+      const hasKey = !!(settings.geminiApiKey && settings.geminiApiKey.trim());
+      const isMain = contextId === 'main';
+      const isExpanded = isMain ? autoFetchState.expanded : true;
+
+      return `
+        <div class="auto-fetch-card">
+          ${isMain ? `
+            <button type="button" class="auto-fetch-header" data-af-toggle="${contextId}">
+              <div class="auto-fetch-header-left">
+                <span class="auto-fetch-badge">✨ 자동 수집</span>
+                <span class="auto-fetch-summary">AI·온라인 단어 자동 가져오기</span>
+              </div>
+              <span class="auto-fetch-toggle-txt">${isExpanded ? '접기 ▲' : '펼치기 ▼'}</span>
+            </button>
+          ` : `
+            <div class="auto-fetch-header" style="cursor:default;">
+              <div class="auto-fetch-header-left">
+                <span class="auto-fetch-badge">✨ 자동 수집</span>
+                <span class="auto-fetch-summary">AI·온라인 단어 자동 가져오기</span>
+              </div>
+            </div>
+          `}
+
+          <div class="auto-fetch-body ${isExpanded ? '' : 'hidden'}">
+            <div class="preset-chip-row">
+              ${presets.map(p => `
+                <button type="button" class="preset-chip ${autoFetchState.preset === p ? 'active' : ''}" data-af-preset="${p}">${p}</button>
+              `).join('')}
+            </div>
+
+            <div class="fetch-input-row">
+              <input type="text" class="input-field" data-af-keyword value="${escapeHtml(autoFetchState.keyword)}" placeholder="주제·키워드 (예: 비즈니스, 일본어 JLPT, 마케팅)" />
+              <select class="fetch-count-select" data-af-count aria-label="수집 개수">
+                <option value="10" ${autoFetchState.count === 10 ? 'selected' : ''}>10개</option>
+                <option value="15" ${autoFetchState.count === 15 ? 'selected' : ''}>15개</option>
+                <option value="20" ${autoFetchState.count === 20 ? 'selected' : ''}>20개</option>
+              </select>
+            </div>
+
+            <button type="button" class="btn-fetch-main" data-af-run-free ${autoFetchState.loading ? 'disabled' : ''}>
+              ${autoFetchState.loading
+                ? `<span class="mini-spinner"></span><span>${escapeHtml(autoFetchState.progressText || '가져오는 중…')}</span>`
+                : `<span>단어 가져오기 (API 키 불필요)</span>`
+              }
+            </button>
+
+            ${autoFetchState.fallbackOffer ? `
+              <div class="fallback-prompt-box">
+                <div>오프라인 또는 통신 제한으로 실시간 수집이 중단되었습니다. <strong>"${escapeHtml(autoFetchState.fallbackOffer.topic)}"</strong> 내장 폴백 뱅크로 최소 10개 카드를 바로 생성할까요?</div>
+                <div class="btn-row">
+                  <button type="button" class="btn-solid" style="padding:7px 12px; font-size:12.5px;" data-af-accept-fallback>내장 폴백으로 생성</button>
+                  <button type="button" class="btn-outline" style="padding:7px 12px; font-size:12.5px;" data-af-dismiss-fallback>닫기</button>
+                </div>
+              </div>
+            ` : ''}
+
+            <details class="gemini-sub-details" ${(autoFetchState.geminiOpen || autoFetchState.geminiPrompt) ? 'open' : ''}>
+              <summary>
+                <span>Gemini API 키로 자연어 생성 (선택)</span>
+                <span class="key-status-pill">${hasKey ? maskApiKey(settings.geminiApiKey) : '키 미등록'}</span>
+              </summary>
+              <div class="gemini-sub-box">
+                <div class="fetch-input-row">
+                  <input type="password" class="input-field" data-af-apikey value="${escapeHtml(settings.geminiApiKey || '')}" placeholder="AIza... Gemini API 키 입력" />
+                  <button type="button" class="btn-outline" style="height:38px; padding:0 11px;" data-af-save-key>저장</button>
+                  ${hasKey ? `<button type="button" class="btn-outline" style="height:38px; padding:0 10px; color:var(--accent);" data-af-del-key>삭제</button>` : ''}
+                </div>
+                <div class="fetch-input-row">
+                  <input type="text" class="input-field" data-af-gemini-prompt value="${escapeHtml(autoFetchState.geminiPrompt)}" placeholder="예: 식품 품질관리 현장 영단어 15개" />
+                  <button type="button" class="btn-solid" style="height:38px; padding:0 13px; flex-shrink:0;" data-af-run-gemini ${autoFetchState.loading ? 'disabled' : ''}>AI 생성</button>
+                </div>
+              </div>
+            </details>
+          </div>
+        </div>
+      `;
+    }
+
+    function bindAutoFetchContainerEvents(container) {
+      if (!container) return;
+
+      const toggleBtn = container.querySelector('[data-af-toggle]');
+      if (toggleBtn) {
+        toggleBtn.addEventListener('click', () => {
+          autoFetchState.expanded = !autoFetchState.expanded;
+          renderAllAutoFetchPanels();
+        });
+      }
+
+      container.querySelectorAll('[data-af-preset]').forEach(chip => {
+        chip.addEventListener('click', () => {
+          const val = chip.dataset.afPreset;
+          autoFetchState.preset = val;
+          autoFetchState.keyword = val;
+          renderAllAutoFetchPanels();
+        });
+      });
+
+      const kwInput = container.querySelector('[data-af-keyword]');
+      if (kwInput) {
+        kwInput.addEventListener('input', (e) => {
+          autoFetchState.keyword = e.target.value;
+          autoFetchState.preset = '';
+          // 다른 패널의 입력값도 동기화
+          document.querySelectorAll('[data-af-keyword]').forEach(el => {
+            if (el !== e.target) el.value = e.target.value;
+          });
+        });
+      }
+
+      const cntSelect = container.querySelector('[data-af-count]');
+      if (cntSelect) {
+        cntSelect.addEventListener('change', (e) => {
+          autoFetchState.count = Number(e.target.value) || 15;
+          document.querySelectorAll('[data-af-count]').forEach(el => {
+            if (el !== e.target) el.value = e.target.value;
+          });
+        });
+      }
+
+      const runFreeBtn = container.querySelector('[data-af-run-free]');
+      if (runFreeBtn) {
+        runFreeBtn.addEventListener('click', () => {
+          if (autoFetchState.loading) return;
+          runFreeOnlineWordFetch(autoFetchState.keyword, autoFetchState.count);
+        });
+      }
+
+      const acceptFbBtn = container.querySelector('[data-af-accept-fallback]');
+      if (acceptFbBtn) {
+        acceptFbBtn.addEventListener('click', () => {
+          const offer = autoFetchState.fallbackOffer;
+          if (!offer) return;
+          const fbDeck = createOfflineFallbackDeck(offer.topic, offer.count);
+          autoFetchState.fallbackOffer = null;
+          renderAllAutoFetchPanels();
+          applyGeneratedDeck(fbDeck, `"${fbDeck.title}" 생성 완료!`);
+        });
+      }
+
+      const dismissFbBtn = container.querySelector('[data-af-dismiss-fallback]');
+      if (dismissFbBtn) {
+        dismissFbBtn.addEventListener('click', () => {
+          autoFetchState.fallbackOffer = null;
+          renderAllAutoFetchPanels();
+        });
+      }
+
+      const saveKeyBtn = container.querySelector('[data-af-save-key]');
+      if (saveKeyBtn) {
+        saveKeyBtn.addEventListener('click', () => {
+          const keyInput = container.querySelector('[data-af-apikey]');
+          const val = (keyInput?.value || '').trim();
+          if (!val) {
+            showToast('저장할 Gemini API 키를 입력해 주세요.');
+            return;
+          }
+          settings.geminiApiKey = val;
+          safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+          autoFetchState.expanded = true;
+          autoFetchState.geminiOpen = true;
+          renderAllAutoFetchPanels();
+          showToast('Gemini API 키가 안전하게 저장되었습니다.');
+        });
+      }
+
+      const delKeyBtn = container.querySelector('[data-af-del-key]');
+      if (delKeyBtn) {
+        delKeyBtn.addEventListener('click', () => {
+          settings.geminiApiKey = '';
+          safeSaveJSON(STORAGE_KEYS.SETTINGS, settings);
+          autoFetchState.expanded = true;
+          autoFetchState.geminiOpen = true;
+          renderAllAutoFetchPanels();
+          showToast('저장된 Gemini API 키가 삭제되었습니다.');
+        });
+      }
+
+      const geminiDetails = container.querySelector('.gemini-sub-details');
+      if (geminiDetails) {
+        geminiDetails.addEventListener('toggle', () => {
+          autoFetchState.geminiOpen = geminiDetails.open;
+        });
+      }
+
+      const gPromptInput = container.querySelector('[data-af-gemini-prompt]');
+      if (gPromptInput) {
+        gPromptInput.addEventListener('input', (e) => {
+          autoFetchState.geminiPrompt = e.target.value;
+          document.querySelectorAll('[data-af-gemini-prompt]').forEach(el => {
+            if (el !== e.target) el.value = e.target.value;
+          });
+        });
+      }
+
+      const runGeminiBtn = container.querySelector('[data-af-run-gemini]');
+      if (runGeminiBtn) {
+        runGeminiBtn.addEventListener('click', () => {
+          if (autoFetchState.loading) return;
+          runGeminiNaturalFetch(autoFetchState.geminiPrompt);
+        });
+      }
+    }
+
+    function renderAllAutoFetchPanels() {
+      const mainMount = document.getElementById('mainAutoFetchMount');
+      const modalMount = document.getElementById('modalAutoFetchMount');
+      if (mainMount) {
+        mainMount.innerHTML = buildAutoFetchPanelHTML('main');
+        bindAutoFetchContainerEvents(mainMount);
+      }
+      if (modalMount) {
+        modalMount.innerHTML = buildAutoFetchPanelHTML('modal');
+        bindAutoFetchContainerEvents(modalMount);
+      }
+    }
+
+    // 초기화 시 자동 가져오기 패널 마운트
+    if (document.readyState === 'loading') {
+      window.addEventListener('DOMContentLoaded', renderAllAutoFetchPanels);
+    } else {
+      renderAllAutoFetchPanels();
+    }
+  </script>
+</body>
+</html>
