@@ -5,6 +5,12 @@
 
 **▶ 라이브: https://zizla.github.io/word_memory/**
 
+## 앱으로 설치하기 (PWA)
+
+안드로이드 크롬에서 주소를 열면 **「앱 설치」**, 아이폰 사파리에서는 **공유 → 홈 화면에 추가**가 뜹니다.
+설치하면 주소창 없는 단독 창으로 뜨고(standalone), 한 번 열어 둔 앱 셸은 오프라인에서도 열립니다.
+학습 기록·단어장은 설치 전과 같은 기기 저장소(localStorage)를 그대로 씁니다.
+
 ## 주요 기능
 
 - **클리커 3모드** — ① 기본/방향키 모드(다버튼 리모컨: `→`·PgDn·Space 다음, `←`·PgUp 이전, `↑`·Enter 뒤집기, `↓` 발음) ② 원버튼 순환 모드(1버튼 링·셀카 리모컨으로 앞면 → 뜻 → 다음) ③ 커스텀 키 바인딩(원하는 리모컨 키를 직접 매핑). 키 테스트 모니터와 타건음·햅틱 피드백 포함.
@@ -20,9 +26,15 @@
 | 파일 | 설명 |
 | --- | --- |
 | `index.html` | 앱 전체(단일 파일, 프레임워크·빌드 없음) |
+| `manifest.webmanifest` | PWA 매니페스트(앱 이름·아이콘·단독 실행) |
+| `sw.js` | Service Worker — 앱 셸 캐시·오프라인 폴백 (외부 API·CDN 은 통과) |
+| `icons/` | 앱 아이콘 180·192·512·maskable 512 (한지 바탕 + 주인(朱印) 배지) |
+| `tools/make_icons.py` | 아이콘 재생성 스크립트 (`python3 tools/make_icons.py`) |
 | `README.md` | 이 문서 |
 
-`gh-pages` 브랜치가 GitHub Pages 배포 브랜치입니다(`main`은 소스 보관용). 두 브랜치의 `index.html`은 항상 동일하게 유지합니다. 앱을 고칠 때는 `index.html`을 수정해 양쪽 브랜치에 반영하면 됩니다.
+`gh-pages` 브랜치가 GitHub Pages 배포 브랜치입니다(`main`은 소스 보관용). 두 브랜치의 `index.html`·`manifest.webmanifest`·`sw.js`·`icons/`는 항상 동일하게 유지합니다. 앱을 고칠 때는 수정한 파일을 양쪽 브랜치에 반영하면 됩니다.
+
+> Service Worker 는 사이트 루트(`/word_memory/`) 기준 상대 경로(`./`)로만 동작하므로 `file://` 로 열면 등록되지 않습니다. 로컬 확인은 `python3 -m http.server` 처럼 서버로 열어 주세요.
 
 ## 라이선스
 

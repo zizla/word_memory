@@ -4,6 +4,19 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>눌러 — 한 손 클리커 스마트 단어장</title>
+  <meta name="description" content="한 손 클리커 스마트 단어장 — 키캡 리모컨·폰·노트북에서 쓰는 플래시카드. 앱처럼 설치해 오프라인에서도 학습 기록이 그대로 남습니다." />
+
+  <!-- PWA: 홈 화면에 추가 / 앱 설치 -->
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <meta name="theme-color" content="#F7F4EE" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="눌러 단어장" />
+  <meta name="application-name" content="눌러 단어장" />
+  <link rel="apple-touch-icon" sizes="180x180" href="./icons/icon-180.png" />
+  <link rel="apple-touch-icon" href="./icons/icon-192.png" />
+  <link rel="icon" type="image/png" sizes="64x64" href="./icons/favicon-64.png" />
 
   <!-- Fonts: Noto Serif KR, Pretendard, JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -3943,6 +3956,48 @@
     } else {
       renderAllAutoFetchPanels();
     }
+  </script>
+
+  <!-- PWA: 단독 실행 상태바 색을 현재 테마에 맞춘다 -->
+  <script>
+    (function () {
+      var meta = document.querySelector('meta[name="theme-color"]');
+      var colors = { light: '#F7F4EE', dark: '#161615' };
+      function syncThemeColor() {
+        var isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+        if (meta) meta.setAttribute('content', isDark ? colors.dark : colors.light);
+      }
+      syncThemeColor();
+      new MutationObserver(syncThemeColor).observe(document.documentElement, {
+        attributes: true,
+        attributeFilter: ['data-theme']
+      });
+    })();
+  </script>
+
+  <!-- PWA: Service Worker 등록 (앱 셸 캐시 · 오프라인 · 즉시 업데이트) -->
+  <script>
+    (function () {
+      if (!('serviceWorker' in navigator)) return;
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('./sw.js', { scope: './' }).then(function (reg) {
+          // 새 버전이 대기하면 바로 활성화 요청
+          reg.addEventListener('updatefound', function () {
+            var worker = reg.installing;
+            if (!worker) return;
+            worker.addEventListener('statechange', function () {
+              if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+                worker.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          });
+          // 앱을 다시 열 때마다 업데이트를 확인한다
+          reg.update().catch(function () {});
+        }).catch(function (err) {
+          console.warn('Service Worker 등록 실패:', err);
+        });
+      });
+    })();
   </script>
 </body>
 </html>
