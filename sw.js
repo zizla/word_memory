@@ -109,7 +109,14 @@ self.addEventListener('fetch', (event) => {
 async function networkFirst(request) {
   const cache = await caches.open(SHELL_CACHE);
   try {
-    const response = await fetch(request);
+    /* no-cache: HTTP 캐시를 믿지 않고 매번 조건부 재검증 → 새 배포가 바로 반영 */
+    let fresh;
+    try {
+      fresh = new Request(request, { cache: 'no-cache' });
+    } catch (err) {
+      fresh = request;
+    }
+    const response = await fetch(fresh);
     if (response && response.ok) {
       cache.put(request, response.clone()).catch(() => {});
     }
